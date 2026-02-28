@@ -10,7 +10,7 @@ It can be used by transfeminine individuals undergoing transition and cis-female
 
 The pharmacokinetic algorithms, mathematical models, and parameters used in this simulation are derived directly from the [HRT-Recorder-PKcomponent-Test](https://github.com/LaoZhong-Mihari/HRT-Recorder-PKcomponent-Test) repository.
 
-We strictly adhere to the PKcore.swift and PKparameter.swift logic provided by **@LaoZhong-Mihari**, ensuring that the web simulation matches the accuracy of the original native implementation (including 3-compartment models, two-part depot kinetics, and specific sublingual absorption tiers).
+We strictly adhere to the PKcore.swift and PKparameter.swift logic provided by **@LaoZhong-Mihari**, ensuring that this kotlin simulation matches the accuracy of the original native implementation (including 3-compartment models, two-part depot kinetics, and specific sublingual absorption tiers).
 
 ## Features
 
@@ -28,5 +28,5 @@ This project is inspired by [SmirnovaOyama/Oyama-s-HRT-Tracker](https://github.c
 
 ## Future Works
 
-[ ] Implement cross-platform compatibility to allow users on different devices to access their data seamlessly.
-[ ] Optional online data backup and synchronization features to prevent data loss and allow access from multiple devices.
+- [ ] Implement cross-platform compatibility to allow users on different devices to access their data seamlessly.
+- [ ] Optional online data backup and synchronization features to prevent data loss and allow access from multiple devices.
