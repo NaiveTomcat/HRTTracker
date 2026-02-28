@@ -6,28 +6,96 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cn.naivetomcat.hrt_tracker.pk.DoseEvent
 import cn.naivetomcat.hrt_tracker.pk.Ester
 import cn.naivetomcat.hrt_tracker.pk.Route
+import cn.naivetomcat.hrt_tracker.pk.SublingualTier
+import cn.naivetomcat.hrt_tracker.ui.components.MedicationRecordBottomSheet
 import cn.naivetomcat.hrt_tracker.ui.components.MedicationRecordItem
+import cn.naivetomcat.hrt_tracker.ui.components.PatchMode
+import cn.naivetomcat.hrt_tracker.ui.components.RecordDefaults
 import cn.naivetomcat.hrt_tracker.ui.theme.HRTTrackerTheme
 
 /**
- * 用药记录列表屏幕
+ * 用药记录列表屏幕（带状态管理）
+ * 
+ * @param modifier Modifier
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun MedicationRecordsScreen(
+    modifier: Modifier = Modifier
+) {
+    var events by remember { mutableStateOf<List<DoseEvent>>(emptyList()) }
+    var showBottomSheet by remember { mutableStateOf(false) }
+    var eventToEdit by remember { mutableStateOf<DoseEvent?>(null) }
+    var recordDefaults by remember { mutableStateOf<RecordDefaults?>(null) }
+
+    MedicationRecordsScreenContent(
+        events = events,
+        onEventClick = { event ->
+            eventToEdit = event
+            showBottomSheet = true
+        },
+        onAddClick = {
+            eventToEdit = null
+            showBottomSheet = true
+        },
+        modifier = modifier
+    )
+
+    // 底部弹窗
+    MedicationRecordBottomSheet(
+        showBottomSheet = showBottomSheet,
+        onDismiss = {
+            showBottomSheet = false
+            eventToEdit = null
+        },
+        onSave = { event ->
+            if (eventToEdit != null) {
+                // 更新现有记录
+                events = events.map { if (it.id == event.id) event else it }
+            } else {
+                // 添加新记录，并保存默认值（除时间外）
+                recordDefaults = RecordDefaults(
+                    route = event.route,
+                    ester = event.ester,
+                    doseMG = event.doseMG,
+                    patchMode = if (event.extras.containsKey(DoseEvent.ExtraKey.RELEASE_RATE_UG_PER_DAY)) 
+                        PatchMode.RATE 
+                    else 
+                        PatchMode.DOSE,
+                    patchRateUgPerDay = event.extras[DoseEvent.ExtraKey.RELEASE_RATE_UG_PER_DAY] ?: 0.0,
+                    sublingualTier = event.extras[DoseEvent.ExtraKey.SUBLINGUAL_TIER]?.toInt()?.let { tier ->
+                        SublingualTier.values().getOrElse(tier) { SublingualTier.STANDARD }
+                    } ?: SublingualTier.STANDARD
+                )
+                events = events + event
+            }
+        },
+        onDelete = { id ->
+            events = events.filter { it.id != id }
+        },
+        eventToEdit = eventToEdit,
+        defaults = recordDefaults
+    )
+}
+
+/**
+ * 用药记录列表屏幕内容（无状态）
  * 
  * @param events 用药事件列表
  * @param onEventClick 点击事件回调
  * @param onAddClick 添加按钮点击回调
  * @param modifier Modifier
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun MedicationRecordsScreen(
+private fun MedicationRecordsScreenContent(
     events: List<DoseEvent>,
     onEventClick: (DoseEvent) -> Unit,
     onAddClick: () -> Unit,
@@ -44,7 +112,7 @@ fun MedicationRecordsScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            MediumFloatingActionButton(
                 onClick = onAddClick,
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -89,7 +157,11 @@ fun MedicationRecordsScreen(
                 }
             }
         } else {
-            // 用药记录列表
+            // 用药记录列表（按时间倒序排列，最新的在前面）
+            val sortedEvents = remember(events) {
+                events.sortedByDescending { it.timeH }
+            }
+            
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -98,7 +170,7 @@ fun MedicationRecordsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(
-                    items = events,
+                    items = sortedEvents,
                     key = { it.id }
                 ) { event ->
                     MedicationRecordItem(
@@ -119,7 +191,7 @@ fun MedicationRecordsScreen(
 @Composable
 private fun PreviewMedicationRecordsScreenEmpty() {
     HRTTrackerTheme {
-        MedicationRecordsScreen(
+        MedicationRecordsScreenContent(
             events = emptyList(),
             onEventClick = {},
             onAddClick = {}
@@ -177,7 +249,7 @@ private fun PreviewMedicationRecordsScreenWithData() {
             )
         }
 
-        MedicationRecordsScreen(
+        MedicationRecordsScreenContent(
             events = events,
             onEventClick = {},
             onAddClick = {}
@@ -213,10 +285,18 @@ private fun PreviewMedicationRecordsScreenDark() {
             )
         }
 
-        MedicationRecordsScreen(
+        MedicationRecordsScreenContent(
             events = events,
             onEventClick = {},
             onAddClick = {}
         )
+    }
+}
+
+@Preview(name = "完整功能（带底部弹窗）", showBackground = true, showSystemUi = true)
+@Composable
+private fun PreviewMedicationRecordsScreenWithBottomSheet() {
+    HRTTrackerTheme {
+        MedicationRecordsScreen()
     }
 }
