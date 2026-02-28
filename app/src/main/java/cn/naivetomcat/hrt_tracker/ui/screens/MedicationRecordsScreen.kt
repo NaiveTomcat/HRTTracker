@@ -19,18 +19,21 @@ import cn.naivetomcat.hrt_tracker.ui.components.MedicationRecordItem
 import cn.naivetomcat.hrt_tracker.ui.components.PatchMode
 import cn.naivetomcat.hrt_tracker.ui.components.RecordDefaults
 import cn.naivetomcat.hrt_tracker.ui.theme.HRTTrackerTheme
+import cn.naivetomcat.hrt_tracker.viewmodel.HRTViewModel
 
 /**
  * 用药记录列表屏幕（带状态管理）
  * 
+ * @param viewModel HRT ViewModel
  * @param modifier Modifier
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MedicationRecordsScreen(
+    viewModel: HRTViewModel,
     modifier: Modifier = Modifier
 ) {
-    var events by remember { mutableStateOf<List<DoseEvent>>(emptyList()) }
+    val events by viewModel.events.collectAsState()
     var showBottomSheet by remember { mutableStateOf(false) }
     var eventToEdit by remember { mutableStateOf<DoseEvent?>(null) }
     var recordDefaults by remember { mutableStateOf<RecordDefaults?>(null) }
@@ -56,11 +59,15 @@ fun MedicationRecordsScreen(
             eventToEdit = null
         },
         onSave = { event ->
-            if (eventToEdit != null) {
-                // 更新现有记录
-                events = events.map { if (it.id == event.id) event else it }
-            } else {
-                // 添加新记录，并保存默认值（除时间外）
+            // 保存前判断是否为新记录（用于更新默认值）
+            val isNewRecord = eventToEdit == null
+            
+            viewModel.upsertEvent(event)
+            showBottomSheet = false
+            eventToEdit = null
+            
+            // 如果是新记录，保存默认值（除时间外）以供下次使用
+            if (isNewRecord) {
                 recordDefaults = RecordDefaults(
                     route = event.route,
                     ester = event.ester,
@@ -74,11 +81,12 @@ fun MedicationRecordsScreen(
                         SublingualTier.values().getOrElse(tier) { SublingualTier.STANDARD }
                     } ?: SublingualTier.STANDARD
                 )
-                events = events + event
             }
         },
         onDelete = { id ->
-            events = events.filter { it.id != id }
+            viewModel.deleteEvent(id)
+            showBottomSheet = false
+            eventToEdit = null
         },
         eventToEdit = eventToEdit,
         defaults = recordDefaults
@@ -293,10 +301,4 @@ private fun PreviewMedicationRecordsScreenDark() {
     }
 }
 
-@Preview(name = "完整功能（带底部弹窗）", showBackground = true, showSystemUi = true)
-@Composable
-private fun PreviewMedicationRecordsScreenWithBottomSheet() {
-    HRTTrackerTheme {
-        MedicationRecordsScreen()
-    }
-}
+// Note: 完整功能预览需要真实的 ViewModel，在实际设备上运行查看效果
