@@ -955,7 +955,7 @@ private fun PreviewMedicationRecordBottomSheetAdd() {
                         ) {
                             Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()))
+                            Text(SimpleDateFormat("yyyy-MM-dd", LocalLocale.current.platformLocale).format(Date()))
                         }
                     }
                     ElevatedCard(
@@ -969,7 +969,7 @@ private fun PreviewMedicationRecordBottomSheetAdd() {
                         ) {
                             Icon(Icons.Default.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()))
+                            Text(SimpleDateFormat("HH:mm", LocalLocale.current.platformLocale).format(Date()))
                         }
                     }
                 }
@@ -1102,7 +1102,7 @@ private fun PreviewMedicationRecordBottomSheetEditInjection() {
                         ) {
                             Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(System.currentTimeMillis() - 7 * 24 * 3600000)))
+                            Text(SimpleDateFormat("yyyy-MM-dd", LocalLocale.current.platformLocale).format(Date(System.currentTimeMillis() - 7 * 24 * 3600000)))
                         }
                     }
                     ElevatedCard(modifier = Modifier.weight(1f)) {

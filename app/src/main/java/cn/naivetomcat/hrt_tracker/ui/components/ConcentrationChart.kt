@@ -32,6 +32,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.sqrt
+import androidx.compose.ui.platform.LocalLocale
 
 
 /**
@@ -445,7 +446,7 @@ fun ConcentrationChart(
         // 显示浮动信息窗口
         selectedPoint?.let { (time, conc) ->
             touchPosition?.let { pos ->
-                val dateFormat = SimpleDateFormat("MM/dd HH:mm", Locale.getDefault())
+                val dateFormat = SimpleDateFormat("MM/dd HH:mm", LocalLocale.current.platformLocale)
                 val timeMillis = (time * 3600000).toLong()
                 val timeText = dateFormat.format(Date(timeMillis))
                 val concText = "%.1f pg/mL".format(conc)
