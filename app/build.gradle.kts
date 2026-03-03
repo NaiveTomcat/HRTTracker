@@ -17,8 +17,8 @@ android {
         applicationId = "cn.naivetomcat.hrt_tracker"
         minSdk = 31
         targetSdk = 36
-        versionCode = 10000
-        versionName = "1.0.0"
+        versionCode = 10010
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
