@@ -95,6 +95,9 @@ private fun HomeScreenContent(
         }
     }
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+        ),
         topBar = {
             TopAppBar(
                 title = { Text("雌二醇血药浓度", style = MaterialTheme.typography.headlineMediumEmphasized) },

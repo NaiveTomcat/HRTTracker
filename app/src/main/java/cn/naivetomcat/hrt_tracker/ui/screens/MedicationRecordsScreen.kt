@@ -7,11 +7,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.Wallpapers
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
+import cn.naivetomcat.hrt_tracker.data.MedicationPlan
 import cn.naivetomcat.hrt_tracker.data.ThemeMode
+import cn.naivetomcat.hrt_tracker.data.displayName
 import cn.naivetomcat.hrt_tracker.pk.DoseEvent
 import cn.naivetomcat.hrt_tracker.pk.Ester
 import cn.naivetomcat.hrt_tracker.pk.Route
@@ -21,6 +25,8 @@ import cn.naivetomcat.hrt_tracker.ui.components.MedicationRecordItem
 import cn.naivetomcat.hrt_tracker.ui.components.PatchMode
 import cn.naivetomcat.hrt_tracker.ui.components.RecordDefaults
 import cn.naivetomcat.hrt_tracker.ui.theme.HRTTrackerTheme
+import cn.naivetomcat.hrt_tracker.ui.utils.getRouteDisplayName
+import cn.naivetomcat.hrt_tracker.ui.utils.getRouteIcon
 import cn.naivetomcat.hrt_tracker.viewmodel.HRTViewModel
 
 /**
@@ -36,12 +42,14 @@ fun MedicationRecordsScreen(
     modifier: Modifier = Modifier
 ) {
     val events by viewModel.events.collectAsState()
+    val allPlans by viewModel.allPlans.collectAsState()
     var showBottomSheet by remember { mutableStateOf(false) }
     var eventToEdit by remember { mutableStateOf<DoseEvent?>(null) }
     var recordDefaults by remember { mutableStateOf<RecordDefaults?>(null) }
 
     MedicationRecordsScreenContent(
         events = events,
+        allPlans = allPlans,
         onEventClick = { event ->
             eventToEdit = event
             showBottomSheet = true
@@ -49,6 +57,17 @@ fun MedicationRecordsScreen(
         onAddClick = {
             eventToEdit = null
             showBottomSheet = true
+        },
+        onQuickAddFromPlan = { plan ->
+            val quickEvent = DoseEvent(
+                route = plan.route,
+                timeH = currentTimeHAtMinutePrecision(),
+                doseMG = plan.doseMG,
+                ester = plan.ester,
+                extras = plan.extras
+            )
+            viewModel.upsertEvent(quickEvent)
+            recordDefaults = quickEvent.toRecordDefaults()
         },
         modifier = modifier
     )
@@ -70,19 +89,7 @@ fun MedicationRecordsScreen(
             
             // 如果是新记录，保存默认值（除时间外）以供下次使用
             if (isNewRecord) {
-                recordDefaults = RecordDefaults(
-                    route = event.route,
-                    ester = event.ester,
-                    doseMG = event.doseMG,
-                    patchMode = if (event.extras.containsKey(DoseEvent.ExtraKey.RELEASE_RATE_UG_PER_DAY)) 
-                        PatchMode.RATE 
-                    else 
-                        PatchMode.DOSE,
-                    patchRateUgPerDay = event.extras[DoseEvent.ExtraKey.RELEASE_RATE_UG_PER_DAY] ?: 0.0,
-                    sublingualTier = event.extras[DoseEvent.ExtraKey.SUBLINGUAL_TIER]?.toInt()?.let { tier ->
-                        SublingualTier.values().getOrElse(tier) { SublingualTier.STANDARD }
-                    } ?: SublingualTier.STANDARD
-                )
+                recordDefaults = event.toRecordDefaults()
             }
         },
         onDelete = { id ->
@@ -107,11 +114,18 @@ fun MedicationRecordsScreen(
 @Composable
 private fun MedicationRecordsScreenContent(
     events: List<DoseEvent>,
+    allPlans: List<MedicationPlan>,
     onEventClick: (DoseEvent) -> Unit,
     onAddClick: () -> Unit,
+    onQuickAddFromPlan: (MedicationPlan) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var fabMenuExpanded by remember { mutableStateOf(false) }
+
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+        ),
         topBar = {
             TopAppBar(
                 title = { Text("用药记录", style = MaterialTheme.typography.headlineMediumEmphasized) },
@@ -122,15 +136,72 @@ private fun MedicationRecordsScreenContent(
             )
         },
         floatingActionButton = {
-            MediumFloatingActionButton(
-                onClick = onAddClick,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            FloatingActionButtonMenu(
+                expanded = fabMenuExpanded,
+                button = {
+                    ToggleFloatingActionButton(
+                        checked = fabMenuExpanded,
+                        onCheckedChange = { fabMenuExpanded = it },
+                        containerSize = { 96.dp },
+                        containerCornerRadius = { progress ->
+                            lerp(28.dp, 48.dp, progress)
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = if (fabMenuExpanded) "关闭添加菜单" else "打开添加菜单"
+                        )
+                    }
+                }
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "添加用药记录"
+                FloatingActionButtonMenuItem(
+                    onClick = {
+                        fabMenuExpanded = false
+                        onAddClick()
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = null
+                        )
+                    },
+                    text = {
+                        Text("手动添加")
+                    }
                 )
+
+                if (allPlans.isEmpty()) {
+                    FloatingActionButtonMenuItem(
+                        onClick = {},
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = null
+                            )
+                        },
+                        text = {
+                            Text("暂无用药方案")
+                        }
+                    )
+                } else {
+                    allPlans.forEach { plan ->
+                        FloatingActionButtonMenuItem(
+                            onClick = {
+                                fabMenuExpanded = false
+                                onQuickAddFromPlan(plan)
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = getRouteIcon(plan.route),
+                                    contentDescription = null
+                                )
+                            },
+                            text = {
+                                Text("${plan.ester.displayName}·${plan.doseMG}mg·${getRouteDisplayName(plan.route)}")
+                            }
+                        )
+                    }
+                }
             }
         },
         modifier = modifier
@@ -142,10 +213,10 @@ private fun MedicationRecordsScreenContent(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(32.dp),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
                 Column(
-                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Icon(
@@ -193,6 +264,29 @@ private fun MedicationRecordsScreenContent(
     }
 }
 
+private fun DoseEvent.toRecordDefaults(): RecordDefaults {
+    return RecordDefaults(
+        route = route,
+        ester = ester,
+        doseMG = doseMG,
+        patchMode = if (extras.containsKey(DoseEvent.ExtraKey.RELEASE_RATE_UG_PER_DAY)) {
+            PatchMode.RATE
+        } else {
+            PatchMode.DOSE
+        },
+        patchRateUgPerDay = extras[DoseEvent.ExtraKey.RELEASE_RATE_UG_PER_DAY] ?: 0.0,
+        sublingualTier = extras[DoseEvent.ExtraKey.SUBLINGUAL_TIER]?.toInt()?.let { tier ->
+            SublingualTier.values().getOrElse(tier) { SublingualTier.STANDARD }
+        } ?: SublingualTier.STANDARD
+    )
+}
+
+private fun currentTimeHAtMinutePrecision(): Double {
+    val nowMs = System.currentTimeMillis()
+    val minuteAlignedMs = (nowMs / 60000L) * 60000L
+    return minuteAlignedMs / 3600000.0
+}
+
 // ============================================================================
 // Previews
 // ============================================================================
@@ -203,8 +297,10 @@ private fun PreviewMedicationRecordsScreenEmpty() {
     HRTTrackerTheme {
         MedicationRecordsScreenContent(
             events = emptyList(),
+            allPlans = emptyList(),
             onEventClick = {},
-            onAddClick = {}
+            onAddClick = {},
+            onQuickAddFromPlan = {}
         )
     }
 }
@@ -259,10 +355,26 @@ private fun PreviewMedicationRecordsScreenWithData() {
             )
         }
 
+        val allPlans = remember {
+            listOf(
+                MedicationPlan(
+                    name = "晚间口服",
+                    route = Route.ORAL,
+                    ester = Ester.E2,
+                    doseMG = 2.0,
+                    scheduleType = MedicationPlan.ScheduleType.DAILY,
+                    timeOfDay = emptyList(),
+                    isEnabled = true
+                )
+            )
+        }
+
         MedicationRecordsScreenContent(
             events = events,
+            allPlans = allPlans,
             onEventClick = {},
-            onAddClick = {}
+            onAddClick = {},
+            onQuickAddFromPlan = {}
         )
     }
 }
@@ -297,8 +409,10 @@ private fun PreviewMedicationRecordsScreenDark() {
 
         MedicationRecordsScreenContent(
             events = events,
+            allPlans = emptyList(),
             onEventClick = {},
-            onAddClick = {}
+            onAddClick = {},
+            onQuickAddFromPlan = {}
         )
     }
 }
@@ -335,8 +449,10 @@ private fun PreviewMedicationRecordsScreenSystem() {
 
         MedicationRecordsScreenContent(
             events = events,
+            allPlans = emptyList(),
             onEventClick = {},
-            onAddClick = {}
+            onAddClick = {},
+            onQuickAddFromPlan = {}
         )
     }
 }

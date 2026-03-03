@@ -12,6 +12,7 @@ import cn.naivetomcat.hrt_tracker.utils.MedicationPlanPredictor
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlin.math.ceil
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.UUID
@@ -26,8 +27,20 @@ class HRTViewModel(
     private val bodyWeightKG: Double = 55.0 // 默认体重，后续可以从用户设置中获取
 ) : ViewModel() {
 
+    private companion object {
+        const val SIMULATION_POINTS_PER_HOUR = 12.0 // 5分钟一个数据点
+    }
+
     // 用药事件列表
     val events: StateFlow<List<DoseEvent>> = repository.getAllEvents()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    // 所有用药计划列表
+    val allPlans: StateFlow<List<cn.naivetomcat.hrt_tracker.data.MedicationPlan>> = medicationPlanRepository.getAllPlans()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -138,9 +151,9 @@ class HRTViewModel(
                 val startTimeH = currentTimeH - 24.0 * 15  // 当前时刻往前15天
                 val endTimeH = currentTimeH + 24.0 * 15    // 当前时刻往后15天
 
-                // 计算步数：至少15分钟一步
+                // 计算步数：至少5分钟一步
                 val totalHours = endTimeH - startTimeH
-                val stepsNeeded = (totalHours * 4).toInt() // 15分钟 = 0.25小时，所以每小时4步
+                val stepsNeeded = ceil(totalHours * SIMULATION_POINTS_PER_HOUR).toInt() + 1
                 val numberOfSteps = maxOf(stepsNeeded, 1000) // 至少1000步
 
                 // 运行基线仿真（仅历史事件，不考虑未来计划）

@@ -97,7 +97,7 @@ fun MedicationPlansScreenContent(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            LargeFloatingActionButton(
                 onClick = onAddClick,
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             ) {
@@ -108,12 +108,13 @@ fun MedicationPlansScreenContent(
             }
         },
         modifier = modifier
-    ) { innerPadding ->
+    ) { paddingValues ->
         if (plans.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(paddingValues)
+                    .padding(32.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -126,9 +127,9 @@ fun MedicationPlansScreenContent(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(paddingValues),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(plans, key = { it.id }) { plan ->
                     MedicationPlanCard(
