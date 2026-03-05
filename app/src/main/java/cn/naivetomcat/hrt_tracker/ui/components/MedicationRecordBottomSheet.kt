@@ -110,7 +110,9 @@ fun MedicationRecordBottomSheet(
         )
     }
     var lastEditedField by remember(eventToEdit, showBottomSheet) { 
-        mutableStateOf<DoseField>(DoseField.E2) 
+        // When editing an existing record, treat raw dose as the source of truth to avoid
+        // floating-point precision loss from the E2-equivalence round-trip.
+        mutableStateOf<DoseField>(if (eventToEdit != null) DoseField.RAW else DoseField.E2) 
     }
 
     // 贴片相关状态
@@ -341,6 +343,7 @@ fun MedicationRecordBottomSheet(
                         },
                         modifier = Modifier.weight(1f),
                         enabled = when {
+                            selectedRoute == Route.PATCH_REMOVE -> true
                             selectedRoute == Route.PATCH_APPLY && patchMode == PatchMode.RATE -> patchRateText.toDoubleOrNull() != null && patchRateText.toDoubleOrNull()!! > 0
                             else -> rawDoseText.toDoubleOrNull() != null && rawDoseText.toDoubleOrNull()!! > 0
                         }
