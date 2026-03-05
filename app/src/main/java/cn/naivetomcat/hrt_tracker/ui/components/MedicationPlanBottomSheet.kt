@@ -430,7 +430,7 @@ private fun EsterSelectionSection(
                         else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                     }
                 ) {
-                    val esterText = getEsterDisplayName(ester)
+                    val esterText = ester.name
                     Box(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center
