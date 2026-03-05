@@ -30,13 +30,4 @@ data class DoseEvent(
         SUBLINGUAL_TIER           // 舌下档位代码（0-3）
     }
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is DoseEvent) return false
-        return id == other.id
-    }
-
-    override fun hashCode(): Int {
-        return id.hashCode()
-    }
 }
