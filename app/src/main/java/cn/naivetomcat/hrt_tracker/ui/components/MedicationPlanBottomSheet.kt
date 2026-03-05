@@ -2,6 +2,7 @@ package cn.naivetomcat.hrt_tracker.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -353,15 +354,16 @@ private fun RouteSelectionSection(
         )
         Spacer(modifier = Modifier.height(8.dp))
         val routes = Route.values().filter { it != Route.PATCH_REMOVE }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
-        ) {
+        ButtonGroup(modifier = Modifier.fillMaxWidth()) {
             routes.forEachIndexed { index, route ->
+                val interactionSource = remember(route) { MutableInteractionSource() }
                 ToggleButton(
                     checked = selectedRoute == route,
                     onCheckedChange = { onRouteSelected(route) },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .animateWidth(interactionSource),
+                    interactionSource = interactionSource,
                     shapes = when {
                         index == 0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
                         index == routes.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
@@ -395,15 +397,16 @@ private fun EsterSelectionSection(
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
-        ) {
+        ButtonGroup(modifier = Modifier.fillMaxWidth()) {
             availableEsters.forEachIndexed { index, ester ->
+                val interactionSource = remember(ester) { MutableInteractionSource() }
                 ToggleButton(
                     checked = selectedEster == ester,
                     onCheckedChange = { onEsterSelected(ester) },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .animateWidth(interactionSource),
+                    interactionSource = interactionSource,
                     shapes = when {
                         index == 0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
                         index == availableEsters.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
@@ -437,15 +440,16 @@ private fun ScheduleTypeSection(
         )
         Spacer(modifier = Modifier.height(8.dp))
         val types = MedicationPlan.ScheduleType.values()
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
-        ) {
+        ButtonGroup(modifier = Modifier.fillMaxWidth()) {
             types.forEachIndexed { index, type ->
+                val interactionSource = remember(type) { MutableInteractionSource() }
                 ToggleButton(
                     checked = selectedType == type,
                     onCheckedChange = { onTypeSelected(type) },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .animateWidth(interactionSource),
+                    interactionSource = interactionSource,
                     shapes = when {
                         index == 0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
                         index == types.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
@@ -625,15 +629,16 @@ private fun SublingualTierSelector(
         Spacer(modifier = Modifier.height(8.dp))
 
         val tiers = SublingualTier.values()
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
-        ) {
+        ButtonGroup(modifier = Modifier.fillMaxWidth()) {
             tiers.forEachIndexed { index, tier ->
+                val interactionSource = remember(tier) { MutableInteractionSource() }
                 ToggleButton(
                     checked = selectedTier == tier,
                     onCheckedChange = { onTierSelected(tier) },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .animateWidth(interactionSource),
+                    interactionSource = interactionSource,
                     shapes = when {
                         index == 0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
                         index == tiers.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
