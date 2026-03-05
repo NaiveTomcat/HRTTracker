@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cn.naivetomcat.hrt_tracker.R
@@ -353,7 +354,7 @@ private fun RouteSelectionSection(
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
-        val routes = Route.values().filter { it != Route.PATCH_REMOVE }
+        val routes = Route.values().filter { it != Route.PATCH_REMOVE && it != Route.PATCH_APPLY }
         ButtonGroup(modifier = Modifier.fillMaxWidth()) {
             routes.forEachIndexed { index, route ->
                 val interactionSource = remember(route) { MutableInteractionSource() }
@@ -372,7 +373,9 @@ private fun RouteSelectionSection(
                 ) {
                     Text(
                         text = getRouteDisplayName(route),
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        minLines = 2,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -415,7 +418,9 @@ private fun EsterSelectionSection(
                 ) {
                     Text(
                         text = getEsterDisplayName(ester),
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        minLines = 2,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -462,7 +467,9 @@ private fun ScheduleTypeSection(
                             MedicationPlan.ScheduleType.WEEKLY -> stringResource(R.string.plan_sheet_schedule_weekly)
                             MedicationPlan.ScheduleType.CUSTOM -> stringResource(R.string.plan_sheet_schedule_custom)
                         },
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        minLines = 2,
+                        textAlign = TextAlign.Center
                     )
                 }
             }

@@ -1,6 +1,7 @@
 package cn.naivetomcat.hrt_tracker.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -799,15 +800,16 @@ private fun SublingualTierSelector(
         )
 
         val tiers = SublingualTier.values()
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
-        ) {
+        ButtonGroup(modifier = Modifier.fillMaxWidth()) {
             tiers.forEachIndexed { index, tier ->
+                val interactionSource = remember(tier) { MutableInteractionSource() }
                 ToggleButton(
                     checked = selectedTier == tier,
                     onCheckedChange = { onTierSelected(tier) },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .animateWidth(interactionSource),
+                    interactionSource = interactionSource,
                     shapes = when {
                         index == 0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
                         index == tiers.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
