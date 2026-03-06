@@ -387,9 +387,8 @@ private fun UpdateSection(
                 ),
                 leadingContent = {
                     if (isChecking) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
+                        LoadingIndicator(
+                            modifier = Modifier.size(24.dp)
                         )
                     } else {
                         Icon(
