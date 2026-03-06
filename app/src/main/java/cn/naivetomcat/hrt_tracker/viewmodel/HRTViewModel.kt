@@ -125,10 +125,16 @@ class HRTViewModel(
                 // 根据用药方案生成未来15天的预测事件
                 val futureEvents = if (enabledPlans.isNotEmpty()) {
                     val now = LocalDateTime.now()
-                    MedicationPlanPredictor.generateFutureEventsForPlans(
+                    val predicted = MedicationPlanPredictor.generateFutureEventsForPlans(
                         plans = enabledPlans,
                         fromDateTime = now,
                         daysAhead = 15
+                    )
+                    // 过滤与历史用药记录冲突的预测事件：
+                    // 若实际用药后1小时内存在同类计划用药，则该计划用药不参与曲线计算
+                    MedicationPlanPredictor.filterConflictingPredictions(
+                        predictedEvents = predicted,
+                        actualEvents = historicalEvents
                     )
                 } else {
                     emptyList()
