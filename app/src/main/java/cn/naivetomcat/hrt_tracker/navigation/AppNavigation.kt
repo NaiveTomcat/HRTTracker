@@ -8,8 +8,11 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -27,15 +30,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -43,6 +51,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import kotlin.math.abs
 import cn.naivetomcat.hrt_tracker.R
 import cn.naivetomcat.hrt_tracker.data.TimeFormat
 import cn.naivetomcat.hrt_tracker.ui.screens.HomeScreen
@@ -57,6 +66,7 @@ import cn.naivetomcat.hrt_tracker.viewmodel.UpdateCheckResult
 private const val NAV_SPRING_DAMPING_RATIO = 0.72f
 private const val NAV_SPRING_STIFFNESS = Spring.StiffnessLow
 private const val NAV_CLICK_THROTTLE_MS = 200L
+private const val NAV_SWIPE_THRESHOLD_DP = 60
 
 /**
  * 应用主导航
@@ -131,10 +141,46 @@ fun AppNavigation(
             )
         }
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.HOME.route,
-            modifier = Modifier.padding(innerPadding),
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentRouteState = rememberUpdatedState(navBackStackEntry?.destination?.route)
+        var swipeDelta by remember { mutableFloatStateOf(0f) }
+        val swipeThresholdPx = with(LocalDensity.current) { NAV_SWIPE_THRESHOLD_DP.dp.toPx() }
+
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { swipeDelta = 0f },
+                        onDragCancel = { swipeDelta = 0f },
+                        onDragEnd = {
+                            if (abs(swipeDelta) > swipeThresholdPx) {
+                                // swipeDelta > 0 means finger moved right -> go to previous tab
+                                val direction = if (swipeDelta > 0) -1 else 1
+                                val currentIndex = screenIndex(currentRouteState.value)
+                                val targetIndex = currentIndex + direction
+                                if (currentIndex != -1 && targetIndex in Screen.entries.indices) {
+                                    navDirection = direction
+                                    navController.navigate(Screen.entries[targetIndex].route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            }
+                        }
+                    ) { _, dragAmount ->
+                        swipeDelta += dragAmount
+                    }
+                }
+        ) {
+            NavHost(
+                navController = navController,
+                startDestination = Screen.HOME.route,
+                modifier = Modifier.fillMaxSize(),
             enterTransition = {
                 val initialIndex = screenIndex(initialState.destination.route)
                 val targetIndex = screenIndex(targetState.destination.route)
@@ -250,6 +296,7 @@ fun AppNavigation(
                 )
             }
         }
+        } // Box
     }
 }
 
