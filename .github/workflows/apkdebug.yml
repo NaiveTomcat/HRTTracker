@@ -42,7 +42,8 @@ jobs:
         id: decode_keystore
         uses: timheuer/base64-to-file@v1
         with:
-          fileName: 'keystore/debugkeystore.jks'
+          fileDir: './app'
+          fileName: 'debugkeystore.jks'
           encodedString: ${{ secrets.KEYSTORE }}
 
       - name: Change wrapper permissions
