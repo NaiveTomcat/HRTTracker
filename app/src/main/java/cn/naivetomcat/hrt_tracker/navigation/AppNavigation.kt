@@ -117,6 +117,11 @@ fun AppNavigation(
     // 剪贴板导出结果消息（用于触发 Snackbar）
     var clipboardExportMessage by remember { mutableStateOf<String?>(null) }
 
+    // 预先获取剪贴板操作所需的字符串资源（避免在非 @Composable 上下文中调用 context.getString）
+    val strClipboardEmpty = stringResource(R.string.import_clipboard_empty)
+    val strCopiedToClipboard = stringResource(R.string.export_copied_to_clipboard)
+    val strExportFilename = stringResource(R.string.export_filename)
+
     // 导入文件选择器
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -155,7 +160,7 @@ fun AppNavigation(
         val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
         val text = clipboardManager?.primaryClip?.getItemAt(0)?.text?.toString()
         if (text.isNullOrBlank()) {
-            hrtViewModel.reportClipboardImportError(context.getString(R.string.import_clipboard_empty))
+            hrtViewModel.reportClipboardImportError(strClipboardEmpty)
             return
         }
         hrtViewModel.importFromMahiroJson(text) { weight ->
@@ -170,7 +175,7 @@ fun AppNavigation(
         val json = hrtViewModel.exportToMahiroJson(userSettings.bodyWeight)
         val clip = ClipData.newPlainText("HRT Tracker Export", json)
         clipboardManager.setPrimaryClip(clip)
-        clipboardExportMessage = context.getString(R.string.export_copied_to_clipboard)
+        clipboardExportMessage = strCopiedToClipboard
     }
 
     // 应用启动时自动检查更新
@@ -372,7 +377,7 @@ fun AppNavigation(
                     onImportFromClipboard = { importFromClipboard() },
                     onExportClick = {
                         pendingExportJson = hrtViewModel.exportToMahiroJson(userSettings.bodyWeight)
-                        exportLauncher.launch(context.getString(R.string.export_filename))
+                        exportLauncher.launch(strExportFilename)
                     },
                     onExportToClipboard = { exportToClipboard() },
                     importResult = importResult,
