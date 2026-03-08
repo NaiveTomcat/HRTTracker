@@ -1,5 +1,8 @@
 package cn.naivetomcat.hrt_tracker.navigation
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.os.SystemClock
 import android.text.format.DateFormat
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -111,6 +114,9 @@ fun AppNavigation(
     // 用于导出时暂存 JSON 内容，直到文件选择器返回 URI
     var pendingExportJson by remember { mutableStateOf<String?>(null) }
 
+    // 剪贴板导出结果消息（用于触发 Snackbar）
+    var clipboardExportMessage by remember { mutableStateOf<String?>(null) }
+
     // 导入文件选择器
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -142,6 +148,29 @@ fun AppNavigation(
         } else {
             pendingExportJson = null
         }
+    }
+
+    // 从剪贴板导入
+    fun importFromClipboard() {
+        val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        val text = clipboardManager?.primaryClip?.getItemAt(0)?.text?.toString()
+        if (text.isNullOrBlank()) {
+            hrtViewModel.reportClipboardImportError(context.getString(R.string.import_clipboard_empty))
+            return
+        }
+        hrtViewModel.importFromMahiroJson(text) { weight ->
+            settingsViewModel.updateBodyWeight(weight)
+        }
+    }
+
+    // 导出到剪贴板
+    fun exportToClipboard() {
+        val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            ?: return
+        val json = hrtViewModel.exportToMahiroJson(userSettings.bodyWeight)
+        val clip = ClipData.newPlainText("HRT Tracker Export", json)
+        clipboardManager.setPrimaryClip(clip)
+        clipboardExportMessage = context.getString(R.string.export_copied_to_clipboard)
     }
 
     // 应用启动时自动检查更新
@@ -340,12 +369,16 @@ fun AppNavigation(
                     onCheckForUpdates = { settingsViewModel.checkForUpdates(versionName) },
                     updateCheckResult = updateCheckResult,
                     onImportClick = { importLauncher.launch(arrayOf("application/json", "*/*")) },
+                    onImportFromClipboard = { importFromClipboard() },
                     onExportClick = {
                         pendingExportJson = hrtViewModel.exportToMahiroJson(userSettings.bodyWeight)
                         exportLauncher.launch(context.getString(R.string.export_filename))
                     },
+                    onExportToClipboard = { exportToClipboard() },
                     importResult = importResult,
-                    onDismissImportResult = hrtViewModel::dismissImportResult
+                    onDismissImportResult = hrtViewModel::dismissImportResult,
+                    clipboardExportMessage = clipboardExportMessage,
+                    onClipboardExportMessageShown = { clipboardExportMessage = null }
                 )
             }
         }

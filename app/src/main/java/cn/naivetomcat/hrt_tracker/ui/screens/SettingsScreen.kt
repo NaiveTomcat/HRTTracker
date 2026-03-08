@@ -6,6 +6,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.LightMode
@@ -51,12 +53,24 @@ fun SettingsScreen(
     onCheckForUpdates: () -> Unit,
     updateCheckResult: UpdateCheckResult,
     onImportClick: () -> Unit = {},
+    onImportFromClipboard: () -> Unit = {},
     onExportClick: () -> Unit = {},
+    onExportToClipboard: () -> Unit = {},
     importResult: ImportResult = ImportResult.Idle,
-    onDismissImportResult: () -> Unit = {}
+    onDismissImportResult: () -> Unit = {},
+    clipboardExportMessage: String? = null,
+    onClipboardExportMessageShown: () -> Unit = {}
 ) {
     var showCopyrightDialog by remember { mutableStateOf(false) }
     var showDisclaimerDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(clipboardExportMessage) {
+        if (clipboardExportMessage != null) {
+            snackbarHostState.showSnackbar(clipboardExportMessage)
+            onClipboardExportMessageShown()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -67,7 +81,8 @@ fun SettingsScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -112,7 +127,9 @@ fun SettingsScreen(
             // 数据导入/导出
             DataSection(
                 onImportClick = onImportClick,
-                onExportClick = onExportClick
+                onImportFromClipboard = onImportFromClipboard,
+                onExportClick = onExportClick,
+                onExportToClipboard = onExportToClipboard
             )
 
             AboutSection(
@@ -189,7 +206,9 @@ fun SettingsScreen(
 @Composable
 private fun DataSection(
     onImportClick: () -> Unit,
-    onExportClick: () -> Unit
+    onImportFromClipboard: () -> Unit,
+    onExportClick: () -> Unit,
+    onExportToClipboard: () -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -207,7 +226,7 @@ private fun DataSection(
         ) {
             SegmentedListItem(
                 onClick = onImportClick,
-                shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
+                shapes = ListItemDefaults.segmentedShapes(index = 0, count = 4),
                 colors = ListItemDefaults.colors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
@@ -226,8 +245,28 @@ private fun DataSection(
             }
 
             SegmentedListItem(
+                onClick = onImportFromClipboard,
+                shapes = ListItemDefaults.segmentedShapes(index = 1, count = 4),
+                colors = ListItemDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                leadingContent = {
+                    Icon(
+                        imageVector = Icons.Outlined.ContentPaste,
+                        contentDescription = null
+                    )
+                },
+                supportingContent = {
+                    Text(stringResource(R.string.settings_import_clipboard_desc))
+                }
+            ) {
+                Text(stringResource(R.string.settings_import_clipboard))
+            }
+
+            SegmentedListItem(
                 onClick = onExportClick,
-                shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
+                shapes = ListItemDefaults.segmentedShapes(index = 2, count = 4),
                 colors = ListItemDefaults.colors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
@@ -243,6 +282,26 @@ private fun DataSection(
                 }
             ) {
                 Text(stringResource(R.string.settings_export_json))
+            }
+
+            SegmentedListItem(
+                onClick = onExportToClipboard,
+                shapes = ListItemDefaults.segmentedShapes(index = 3, count = 4),
+                colors = ListItemDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                leadingContent = {
+                    Icon(
+                        imageVector = Icons.Outlined.ContentCopy,
+                        contentDescription = null
+                    )
+                },
+                supportingContent = {
+                    Text(stringResource(R.string.settings_export_clipboard_desc))
+                }
+            ) {
+                Text(stringResource(R.string.settings_export_clipboard))
             }
         }
     }

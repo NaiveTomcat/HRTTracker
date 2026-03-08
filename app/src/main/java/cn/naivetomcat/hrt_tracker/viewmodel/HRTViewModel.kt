@@ -154,6 +154,13 @@ class HRTViewModel(
     }
 
     /**
+     * 直接将导入结果设为 Error（例如剪贴板为空时）
+     */
+    fun reportClipboardImportError(message: String) {
+        _importResult.value = ImportResult.Error(message)
+    }
+
+    /**
      * 将当前所有用药事件导出为 mahiro JSON 格式字符串
      * @param weight 用户体重（kg），用于写入 JSON 的 weight 字段
      */

@@ -31,14 +31,20 @@
     <string name="settings_time_format_24h_desc">始终使用24小时制</string>
 
     <string name="settings_data_title">数据</string>
-    <string name="settings_import_json">导入 JSON</string>
+    <string name="settings_import_json">导入 JSON（文件）</string>
     <string name="settings_import_json_desc">从 hrt.mahiro.uk 或本应用导出的 JSON 文件导入用药记录</string>
-    <string name="settings_export_json">导出 JSON</string>
+    <string name="settings_import_clipboard">导入 JSON（剪贴板）</string>
+    <string name="settings_import_clipboard_desc">从剪贴板中的 JSON 文本导入用药记录</string>
+    <string name="settings_export_json">导出 JSON（文件）</string>
     <string name="settings_export_json_desc">将用药记录导出为 JSON 文件</string>
+    <string name="settings_export_clipboard">导出 JSON（剪贴板）</string>
+    <string name="settings_export_clipboard_desc">将用药记录的 JSON 文本复制到剪贴板</string>
     <string name="import_importing">正在导入...</string>
     <string name="import_success">成功导入 %1$d 条记录</string>
     <string name="import_error">导入失败：%1$s</string>
     <string name="import_weight_updated">体重已更新为 %1$.1f kg</string>
+    <string name="export_copied_to_clipboard">已复制到剪贴板</string>
+    <string name="import_clipboard_empty">剪贴板为空或无文本内容</string>
     <string name="export_filename" translatable="false">hrt_tracker_export.json</string>
 
     <string name="about_section_title">关于</string>
