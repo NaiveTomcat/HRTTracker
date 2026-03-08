@@ -47,11 +47,11 @@ object UpdateChecker {
     /**
      * 判断远端版本是否比当前版本更新
      *
-     * @param tagName GitHub Release 的 tag（仅含数字和小数点，如 "1.0.2"）
-     * @param currentVersionName 当前应用版本名（如 "1.0.1debug" 或 "1.0.1release"）
+     * @param tagName GitHub Release 的 tag（仅含数字和小数点，如 "v1.0.2"）
+     * @param currentVersionName 当前应用版本名（如 "v1.0.1-43-g634d692-debug" 或 "v1.0.1"）
      */
     fun isNewerVersion(tagName: String, currentVersionName: String): Boolean {
-        val current = currentVersionName.removeSuffix("debug").removeSuffix("release")
+        val current = currentVersionName.split('-')[0].removePrefix("v")
         val remote = tagName.removePrefix("v")
         return compareVersions(remote, current) > 0
     }

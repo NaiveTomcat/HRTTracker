@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -584,6 +585,12 @@ private fun UpdateSection(
     onCheckForUpdates: () -> Unit,
     updateCheckResult: UpdateCheckResult
 ) {
+    val context = LocalContext.current
+    val currentVersion = remember(context) {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull().orEmpty()
+    }
     val isChecking = updateCheckResult is UpdateCheckResult.Checking
     val checkingStatusText = when (updateCheckResult) {
         is UpdateCheckResult.Checking -> stringResource(R.string.update_checking)
@@ -609,7 +616,7 @@ private fun UpdateSection(
             // 自动检查更新开关
             SegmentedListItem(
                 onClick = { onAutoCheckUpdatesChange(!autoCheckUpdates) },
-                shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
+                shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
                 colors = ListItemDefaults.colors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
@@ -644,7 +651,7 @@ private fun UpdateSection(
             // 检查更新按钮
             SegmentedListItem(
                 onClick = { if (!isChecking) onCheckForUpdates() },
-                shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
+                shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
                 colors = ListItemDefaults.colors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
@@ -668,6 +675,26 @@ private fun UpdateSection(
                     color = if (isChecking) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     else MaterialTheme.colorScheme.onSurface
                 )
+            }
+
+            SegmentedListItem(
+                onClick = {},
+                shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
+                colors = ListItemDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                leadingContent = {
+                    Icon(
+                        imageVector = Icons.Outlined.PhoneAndroid,
+                        contentDescription = null
+                    )
+                },
+                supportingContent = {
+                    Text(currentVersion)
+                }
+            ) {
+                Text(stringResource(R.string.settings_current_version))
             }
         }
     }
