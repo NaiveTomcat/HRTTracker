@@ -1,9 +1,32 @@
+import java.io.IOException
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
 }
+
+fun String.runCommand(
+    workingDir: File = File("."),
+    timeoutAmount: Long = 60,
+    timeoutUnit: TimeUnit = TimeUnit.SECONDS
+): String = ProcessBuilder(split("\\s(?=(?:[^'\"`]*(['\"`])[^'\"`]*\\1)*[^'\"`]*$)".toRegex()))
+    .directory(workingDir)
+    .redirectOutput(ProcessBuilder.Redirect.PIPE)
+    .redirectError(ProcessBuilder.Redirect.PIPE)
+    .start()
+    .apply { waitFor(timeoutAmount, timeoutUnit) }
+    .run {
+        val error = errorStream.bufferedReader().readText().trim()
+        if (error.isNotEmpty()) {
+            throw IOException(error)
+        }
+        inputStream.bufferedReader().readText().trim()
+    }
+
+
 
 android {
     namespace = "cn.naivetomcat.hrt_tracker"
@@ -13,28 +36,47 @@ android {
         }
     }
 
+    signingConfigs {
+        val tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
+        val allFilesFromDir = File(tmpFilePath).listFiles()
+
+        if (allFilesFromDir != null) {
+            val keystoreFile = allFilesFromDir.first()
+            keystoreFile.renameTo(File("debugkeystore.jks"))
+        }
+        getByName("debug") {
+            storeFile = file("debugkeystore.jks")
+            storePassword = "DEBUG1"
+            keyAlias = "DEBUG"
+            keyPassword = "DEBUG1"
+        }
+    }
+
     defaultConfig {
         applicationId = "cn.naivetomcat.hrt_tracker"
         minSdk = 31
         targetSdk = 36
         versionCode = 10010
-        versionName = "1.0.1"
+        versionName = "git describe --tags --always".runCommand(workingDir = rootDir)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            applicationIdSuffix = "release"
-            versionNameSuffix = "release"
+            applicationIdSuffix = ".release"
         }
         getByName("debug") {
-            versionNameSuffix = "debug"
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
