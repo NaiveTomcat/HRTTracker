@@ -41,31 +41,28 @@
             android:enabled="true"
             android:exported="false" />
 
-        <!-- 快速用药记录微件 -->
+        <!-- HRT Tracker 组合微件（用药提醒 + 快速添加） -->
         <receiver
-            android:name=".widget.QuickDoseWidgetReceiver"
-            android:label="@string/widget_quick_dose_label"
+            android:name=".widget.HRTTrackerWidgetReceiver"
+            android:label="@string/widget_combined_label"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/quick_dose_widget_info" />
+                android:resource="@xml/hrt_tracker_widget_info" />
         </receiver>
 
-        <!-- 用药提醒微件 -->
-        <receiver
-            android:name=".widget.MedicationReminderWidgetReceiver"
-            android:label="@string/widget_reminder_label"
-            android:exported="true">
+        <!-- 微件配置 Activity -->
+        <activity
+            android:name=".widget.HRTTrackerWidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.HRTTracker">
             <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/medication_reminder_widget_info" />
-        </receiver>
+        </activity>
     </application>
 
 </manifest>

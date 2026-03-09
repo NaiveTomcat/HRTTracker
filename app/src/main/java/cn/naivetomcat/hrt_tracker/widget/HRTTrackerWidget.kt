@@ -1,0 +1,528 @@
+package cn.naivetomcat.hrt_tracker.widget
+
+import android.content.Context
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.glance.Button
+import androidx.glance.ColorFilter
+import androidx.glance.GlanceId
+import androidx.glance.GlanceModifier
+import androidx.glance.GlanceTheme
+import androidx.glance.Image
+import androidx.glance.ImageProvider
+import androidx.glance.LocalSize
+import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
+import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.components.CircleIconButton
+import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.state.getAppWidgetState
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.background
+import androidx.glance.currentState
+import androidx.glance.layout.Alignment
+import androidx.glance.layout.Box
+import androidx.glance.layout.Column
+import androidx.glance.layout.Row
+import androidx.glance.layout.Spacer
+import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.height
+import androidx.glance.layout.padding
+import androidx.glance.layout.size
+import androidx.glance.layout.width
+import androidx.glance.layout.wrapContentHeight
+import androidx.glance.state.GlanceStateDefinition
+import androidx.glance.state.PreferencesGlanceStateDefinition
+import androidx.glance.text.FontWeight
+import androidx.glance.text.Text
+import androidx.glance.text.TextStyle
+import cn.naivetomcat.hrt_tracker.MainActivity
+import cn.naivetomcat.hrt_tracker.R
+import cn.naivetomcat.hrt_tracker.data.AppDatabase
+import cn.naivetomcat.hrt_tracker.data.DoseEventEntity
+import cn.naivetomcat.hrt_tracker.data.MedicationPlan
+import cn.naivetomcat.hrt_tracker.data.displayName
+import cn.naivetomcat.hrt_tracker.pk.DoseEvent
+import cn.naivetomcat.hrt_tracker.widget.WidgetUtils.formatScheduledTime
+import cn.naivetomcat.hrt_tracker.widget.WidgetUtils.routeDisplayName
+import kotlinx.coroutines.flow.first
+import java.util.UUID
+
+// State preference keys (per widget instance via PreferencesGlanceStateDefinition)
+internal val KEY_CONFIGURED_PLAN_ID = stringPreferencesKey("widget_configured_plan_id")
+internal val KEY_CONFIRMING = booleanPreferencesKey("widget_confirming")
+
+// Width threshold separating narrow (2-col) from wide (3+-col) layouts
+private val WIDE_WIDTH_THRESHOLD = 220.dp
+
+/**
+ * HRT Tracker 组合微件（用药提醒 + 快速添加记录）
+ *
+ * 两行竖向布局，最小 2×2（可横向/纵向扩展）：
+ * - 第一行（tertiary container 背景）：用药提醒
+ * - 第二行（widget background）：快速添加当前方案的用药记录
+ *
+ * 宽 ≥ 3格（≥ 220dp）：每行显示图标 → 内容 → 独立按钮
+ * 宽 = 2格（< 220dp）：去掉独立按钮，整行可点击；
+ *   确认状态下整个微件仅显示「确认」「取消」两个按钮
+ */
+class HRTTrackerWidget : GlanceAppWidget() {
+
+    override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
+
+    override val sizeMode: SizeMode = SizeMode.Responsive(
+        setOf(
+            DpSize(130.dp, 110.dp),  // 2 cols × 2 rows (narrow)
+            DpSize(270.dp, 110.dp),  // 3+ cols × 2 rows (wide)
+        )
+    )
+
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val db = AppDatabase.getDatabase(context)
+
+        // Load all data outside provideContent (suspend functions only allowed here)
+        val allPlans = db.medicationPlanDao().getEnabledPlans().first()
+            .map { it.toMedicationPlan() }
+
+        val lookbackH = System.currentTimeMillis() / 3600000.0 - 48.0
+        val recentEvents: List<DoseEvent> = db.doseEventDao()
+            .getEventsByTimeRange(lookbackH, Double.MAX_VALUE)
+            .map { it.toDoseEvent() }
+
+        provideContent {
+            // Read per-widget state inside composable (only accessible here via currentState)
+            val prefs = currentState<Preferences>()
+            val configuredPlanId = prefs[KEY_CONFIGURED_PLAN_ID]
+            val isConfirming = prefs[KEY_CONFIRMING] == true
+
+            // Resolve configured plan; fall back to first enabled plan
+            val configuredPlan = if (configuredPlanId != null) {
+                allPlans.find { it.id.toString() == configuredPlanId }
+                    ?: allPlans.firstOrNull()
+            } else {
+                allPlans.firstOrNull()
+            }
+
+            val reminderInfo = if (configuredPlan != null) {
+                WidgetUtils.findRelevantScheduledDose(listOf(configuredPlan), recentEvents)
+            } else {
+                null
+            }
+
+            HRTTrackerWidgetContent(
+                configuredPlan = configuredPlan,
+                allPlansEmpty = allPlans.isEmpty(),
+                reminderInfo = reminderInfo,
+                isConfirming = isConfirming
+            )
+        }
+    }
+}
+
+@Composable
+private fun HRTTrackerWidgetContent(
+    configuredPlan: MedicationPlan?,
+    allPlansEmpty: Boolean,
+    reminderInfo: ScheduledDoseInfo?,
+    isConfirming: Boolean
+) {
+    val isWide = LocalSize.current.width >= WIDE_WIDTH_THRESHOLD
+    // Use a smart-castable local variable for confirming state
+    val confirmingPlan = if (isConfirming) configuredPlan else null
+
+    Box(
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .background(GlanceTheme.colors.widgetBackground)
+    ) {
+        if (confirmingPlan != null && !isWide) {
+            // Narrow + confirming: entire widget becomes two confirm/cancel buttons
+            NarrowConfirmingContent()
+        } else {
+            Column(modifier = GlanceModifier.fillMaxSize()) {
+                // ── Row 1: Medication Reminder (tertiary container) ────────────────
+                val reminderModifier = GlanceModifier
+                    .fillMaxWidth()
+                    .defaultWeight()
+                    .background(GlanceTheme.colors.tertiaryContainer)
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .let { mod ->
+                        // Narrow mode: whole row opens app when tapped
+                        if (!isWide) mod.clickable(actionStartActivity<MainActivity>()) else mod
+                    }
+                Box(
+                    modifier = reminderModifier,
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    ReminderRowContent(
+                        plan = configuredPlan,
+                        info = reminderInfo,
+                        allPlansEmpty = allPlansEmpty,
+                        isWide = isWide
+                    )
+                }
+
+                Spacer(modifier = GlanceModifier.height(4.dp))
+
+                // ── Row 2: Quick Add (widget background) ──────────────────────────
+                val quickAddModifier = GlanceModifier
+                    .fillMaxWidth()
+                    .defaultWeight()
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .let { mod ->
+                        // Narrow + not confirming: whole row starts the confirm flow
+                        if (!isWide && configuredPlan != null && confirmingPlan == null)
+                            mod.clickable(actionRunCallback<StartConfirmAction>())
+                        else mod
+                    }
+                Box(
+                    modifier = quickAddModifier,
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    if (confirmingPlan != null) {
+                        // Wide + confirming: confirm/cancel inline in this row
+                        WideConfirmingRow(confirmingPlan)
+                    } else {
+                        QuickAddRowContent(
+                            plan = configuredPlan,
+                            allPlansEmpty = allPlansEmpty,
+                            isWide = isWide
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── Reminder row ──────────────────────────────────────────────────────────────
+
+@Composable
+private fun ReminderRowContent(
+    plan: MedicationPlan?,
+    info: ScheduledDoseInfo?,
+    allPlansEmpty: Boolean,
+    isWide: Boolean
+) {
+    Row(
+        modifier = GlanceModifier.fillMaxSize(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        when {
+            allPlansEmpty || plan == null -> {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_widget_alarm),
+                    contentDescription = null,
+                    modifier = GlanceModifier.size(18.dp),
+                    colorFilter = ColorFilter.tint(GlanceTheme.colors.onTertiaryContainer)
+                )
+                Spacer(modifier = GlanceModifier.width(8.dp))
+                Text(
+                    text = "无用药方案",
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onTertiaryContainer,
+                        fontSize = 12.sp
+                    ),
+                    maxLines = 1,
+                    modifier = GlanceModifier.defaultWeight()
+                )
+                if (isWide) {
+                    Button(text = "打开", onClick = actionStartActivity<MainActivity>())
+                }
+            }
+
+            info == null -> {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_widget_check_circle),
+                    contentDescription = null,
+                    modifier = GlanceModifier.size(18.dp),
+                    colorFilter = ColorFilter.tint(GlanceTheme.colors.onTertiaryContainer)
+                )
+                Spacer(modifier = GlanceModifier.width(8.dp))
+                Text(
+                    text = "近期无计划用药",
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onTertiaryContainer,
+                        fontSize = 12.sp
+                    ),
+                    maxLines = 1,
+                    modifier = GlanceModifier.defaultWeight()
+                )
+                if (isWide) {
+                    Button(text = "打开", onClick = actionStartActivity<MainActivity>())
+                }
+            }
+
+            else -> {
+                val statusIcon = if (info.isTaken) R.drawable.ic_widget_check_circle
+                else R.drawable.ic_widget_alarm
+                val iconTint = if (info.isOverdue && !info.isTaken)
+                    GlanceTheme.colors.error else GlanceTheme.colors.onTertiaryContainer
+                Image(
+                    provider = ImageProvider(statusIcon),
+                    contentDescription = null,
+                    modifier = GlanceModifier.size(18.dp),
+                    colorFilter = ColorFilter.tint(iconTint)
+                )
+                Spacer(modifier = GlanceModifier.width(8.dp))
+                Column(
+                    modifier = GlanceModifier.defaultWeight().wrapContentHeight()
+                ) {
+                    val timeLabel = when {
+                        info.isTaken -> "已用药  ${formatScheduledTime(info.scheduledTime)}"
+                        info.isOverdue -> "过期未用药  ${formatScheduledTime(info.scheduledTime)}"
+                        else -> "下次用药  ${formatScheduledTime(info.scheduledTime)}"
+                    }
+                    Text(
+                        text = timeLabel,
+                        style = TextStyle(
+                            color = if (info.isOverdue && !info.isTaken)
+                                GlanceTheme.colors.error
+                            else GlanceTheme.colors.onTertiaryContainer,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        maxLines = 1
+                    )
+                    Text(
+                        text = "${plan.doseMG}mg · ${plan.ester.displayName} · ${routeDisplayName(plan.route)}",
+                        style = TextStyle(
+                            color = GlanceTheme.colors.onTertiaryContainer,
+                            fontSize = 10.sp
+                        ),
+                        maxLines = 1
+                    )
+                }
+                if (isWide) {
+                    Spacer(modifier = GlanceModifier.width(4.dp))
+                    Button(text = "打开", onClick = actionStartActivity<MainActivity>())
+                }
+            }
+        }
+    }
+}
+
+// ── Quick Add row ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun QuickAddRowContent(
+    plan: MedicationPlan?,
+    allPlansEmpty: Boolean,
+    isWide: Boolean
+) {
+    Row(
+        modifier = GlanceModifier.fillMaxSize(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (allPlansEmpty || plan == null) {
+            Image(
+                provider = ImageProvider(R.drawable.ic_widget_add),
+                contentDescription = null,
+                modifier = GlanceModifier.size(18.dp),
+                colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant)
+            )
+            Spacer(modifier = GlanceModifier.width(8.dp))
+            Text(
+                text = "无可用方案",
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                    fontSize = 12.sp
+                ),
+                maxLines = 1,
+                modifier = GlanceModifier.defaultWeight()
+            )
+            if (isWide) {
+                Button(text = "打开", onClick = actionStartActivity<MainActivity>())
+            }
+        } else {
+            Image(
+                provider = ImageProvider(R.drawable.ic_widget_medication),
+                contentDescription = null,
+                modifier = GlanceModifier.size(18.dp),
+                colorFilter = ColorFilter.tint(GlanceTheme.colors.primary)
+            )
+            Spacer(modifier = GlanceModifier.width(8.dp))
+            Column(
+                modifier = GlanceModifier.defaultWeight().wrapContentHeight()
+            ) {
+                Text(
+                    text = plan.name,
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurface,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    maxLines = 1
+                )
+                Text(
+                    text = "${plan.doseMG}mg · ${plan.ester.displayName} · ${routeDisplayName(plan.route)}",
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurfaceVariant,
+                        fontSize = 10.sp
+                    ),
+                    maxLines = 1
+                )
+            }
+            if (isWide) {
+                Spacer(modifier = GlanceModifier.width(4.dp))
+                Button(
+                    text = "添加",
+                    onClick = actionRunCallback<StartConfirmAction>()
+                )
+            }
+        }
+    }
+}
+
+// ── Confirming states ─────────────────────────────────────────────────────────
+
+/** 宽模式：确认行替换 Quick Add 区内容，提醒行保持不变 */
+@Composable
+private fun WideConfirmingRow(plan: MedicationPlan) {
+    Row(
+        modifier = GlanceModifier.fillMaxSize(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = GlanceModifier.defaultWeight().wrapContentHeight()
+        ) {
+            Text(
+                text = "确认添加用药记录？",
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurface,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                maxLines = 1
+            )
+            Text(
+                text = "${plan.name} · ${plan.doseMG}mg · ${routeDisplayName(plan.route)}",
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                    fontSize = 10.sp
+                ),
+                maxLines = 1
+            )
+        }
+        Spacer(modifier = GlanceModifier.width(4.dp))
+        CircleIconButton(
+            imageProvider = ImageProvider(R.drawable.ic_widget_close),
+            contentDescription = "取消",
+            onClick = actionRunCallback<CancelConfirmAction>(),
+            backgroundColor = GlanceTheme.colors.errorContainer,
+            contentColor = GlanceTheme.colors.onErrorContainer,
+            modifier = GlanceModifier.size(32.dp)
+        )
+        Spacer(modifier = GlanceModifier.width(4.dp))
+        CircleIconButton(
+            imageProvider = ImageProvider(R.drawable.ic_widget_check),
+            contentDescription = "确认添加",
+            onClick = actionRunCallback<ConfirmDoseAction>(),
+            backgroundColor = GlanceTheme.colors.primaryContainer,
+            contentColor = GlanceTheme.colors.onPrimaryContainer,
+            modifier = GlanceModifier.size(32.dp)
+        )
+    }
+}
+
+/** 窄模式：确认状态下整个微件仅显示两个按钮，其余内容全部隐藏 */
+@Composable
+private fun NarrowConfirmingContent() {
+    Column(
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .padding(8.dp)
+    ) {
+        Button(
+            text = "✓ 确认添加",
+            onClick = actionRunCallback<ConfirmDoseAction>(),
+            modifier = GlanceModifier.fillMaxWidth().defaultWeight()
+        )
+        Spacer(modifier = GlanceModifier.height(4.dp))
+        Button(
+            text = "✕ 取消",
+            onClick = actionRunCallback<CancelConfirmAction>(),
+            modifier = GlanceModifier.fillMaxWidth().defaultWeight()
+        )
+    }
+}
+
+// ── Action Callbacks ──────────────────────────────────────────────────────────
+
+/** 进入确认状态 */
+class StartConfirmAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters
+    ) {
+        updateAppWidgetState(context, glanceId) { prefs ->
+            prefs[KEY_CONFIRMING] = true
+        }
+        HRTTrackerWidget().update(context, glanceId)
+    }
+}
+
+/** 确认添加记录，然后立即退回主界面（防止用户误以为未响应而多次点击） */
+class ConfirmDoseAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters
+    ) {
+        val prefs = getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)
+        val configuredPlanId = prefs[KEY_CONFIGURED_PLAN_ID]
+
+        val db = AppDatabase.getDatabase(context)
+        val allPlans = db.medicationPlanDao().getEnabledPlans().first()
+            .map { it.toMedicationPlan() }
+        val plan = if (configuredPlanId != null) {
+            allPlans.find { it.id.toString() == configuredPlanId } ?: allPlans.firstOrNull()
+        } else {
+            allPlans.firstOrNull()
+        }
+        if (plan != null) {
+            db.doseEventDao().upsertEvent(
+                DoseEventEntity.fromDoseEvent(
+                    DoseEvent(
+                        route = plan.route,
+                        timeH = System.currentTimeMillis() / 3600000.0,
+                        doseMG = plan.doseMG,
+                        ester = plan.ester,
+                        extras = plan.extras
+                    )
+                )
+            )
+        }
+
+        // Always return to main widget interface to prevent duplicate record submissions
+        updateAppWidgetState(context, glanceId) { prefs ->
+            prefs[KEY_CONFIRMING] = false
+        }
+        HRTTrackerWidget().update(context, glanceId)
+    }
+}
+
+/** 取消确认，回到主界面 */
+class CancelConfirmAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters
+    ) {
+        updateAppWidgetState(context, glanceId) { prefs ->
+            prefs[KEY_CONFIRMING] = false
+        }
+        HRTTrackerWidget().update(context, glanceId)
+    }
+}
