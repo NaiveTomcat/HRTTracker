@@ -22,8 +22,7 @@
         <ImageView
             android:layout_width="18dp"
             android:layout_height="18dp"
-            android:src="@drawable/ic_widget_alarm"
-            android:tint="#304962" />
+            android:src="@drawable/ic_widget_alarm" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -35,7 +34,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="下次用药  今天 08:00"
+                android:text="今天 08:00  下次用药"
                 android:textColor="#304962"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -75,8 +74,7 @@
         <ImageView
             android:layout_width="18dp"
             android:layout_height="18dp"
-            android:src="@drawable/ic_widget_medication"
-            android:tint="#65558F" />
+            android:src="@drawable/ic_widget_medication" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -88,7 +86,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="晨间 EV"
+                android:text="戊酸雌二醇"
                 android:textColor="#1C1B1F"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -96,7 +94,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="2.0mg · 戊酸雌二醇 · 口服"
+                android:text="口服 · 2.0mg"
                 android:textColor="#49454F"
                 android:textSize="10sp" />
         </LinearLayout>

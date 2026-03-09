@@ -283,9 +283,9 @@ private fun ReminderRowContent(
                     modifier = GlanceModifier.defaultWeight().wrapContentHeight()
                 ) {
                     val timeLabel = when {
-                        info.isTaken -> "已用药  ${formatScheduledTime(info.scheduledTime)}"
-                        info.isOverdue -> "漏服  ${formatScheduledTime(info.scheduledTime)}"
-                        else -> "下次用药  ${formatScheduledTime(info.scheduledTime)}"
+                        info.isTaken -> "${formatScheduledTime(info.scheduledTime)}  已用药"
+                        info.isOverdue -> "${formatScheduledTime(info.scheduledTime)}  漏服"
+                        else -> "${formatScheduledTime(info.scheduledTime)}  下次用药"
                     }
                     Text(
                         text = timeLabel,
