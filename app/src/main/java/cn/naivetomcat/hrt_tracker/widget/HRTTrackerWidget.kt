@@ -61,6 +61,7 @@ import java.util.UUID
 // State preference keys (per widget instance via PreferencesGlanceStateDefinition)
 internal val KEY_CONFIGURED_PLAN_ID = stringPreferencesKey("widget_configured_plan_id")
 internal val KEY_CONFIRMING = booleanPreferencesKey("widget_confirming")
+internal val KEY_ADDING = booleanPreferencesKey("widget_adding")
 
 // Width threshold separating narrow (2-col) from wide (3+-col) layouts
 private val WIDE_WIDTH_THRESHOLD = 220.dp
@@ -68,7 +69,7 @@ private val WIDE_WIDTH_THRESHOLD = 220.dp
 /**
  * HRT Tracker 组合微件（用药提醒 + 快速添加记录）
  *
- * 两行竖向布局，最小 2×2（可横向/纵向扩展）：
+ * 两行竖向布局，最小 2×1（仅可横向扩展）：
  * - 第一行（tertiary container 背景）：用药提醒
  * - 第二行（widget background）：快速添加当前方案的用药记录
  *
@@ -82,8 +83,8 @@ class HRTTrackerWidget : GlanceAppWidget() {
 
     override val sizeMode: SizeMode = SizeMode.Responsive(
         setOf(
-            DpSize(130.dp, 110.dp),  // 2 cols × 2 rows (narrow)
-            DpSize(270.dp, 110.dp),  // 3+ cols × 2 rows (wide)
+            DpSize(130.dp, 58.dp),  // 2 cols × 1 row (narrow)
+            DpSize(270.dp, 58.dp),  // 3+ cols × 1 row (wide)
         )
     )
 
@@ -104,6 +105,7 @@ class HRTTrackerWidget : GlanceAppWidget() {
             val prefs = currentState<Preferences>()
             val configuredPlanId = prefs[KEY_CONFIGURED_PLAN_ID]
             val isConfirming = prefs[KEY_CONFIRMING] == true
+            val isAdding = prefs[KEY_ADDING] == true
 
             // Resolve configured plan; fall back to first enabled plan
             val configuredPlan = if (configuredPlanId != null) {

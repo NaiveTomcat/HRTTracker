@@ -3,6 +3,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#FFFBFE"
     android:orientation="vertical"
     android:padding="0dp">
 
@@ -55,9 +56,10 @@
             android:textSize="12sp" />
     </LinearLayout>
 
-    <Space
+    <View
         android:layout_width="match_parent"
-        android:layout_height="4dp" />
+        android:layout_height="4dp"
+        android:background="#FFFBFE" />
 
     <!-- 第二行：快速添加（widget background） -->
     <LinearLayout
@@ -73,7 +75,8 @@
         <ImageView
             android:layout_width="18dp"
             android:layout_height="18dp"
-            android:src="@drawable/ic_widget_medication" />
+            android:src="@drawable/ic_widget_medication"
+            android:tint="#65558F" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -86,6 +89,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="晨间 EV"
+                android:textColor="#1C1B1F"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
@@ -93,6 +97,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="2.0mg · 戊酸雌二醇 · 口服"
+                android:textColor="#49454F"
                 android:textSize="10sp" />
         </LinearLayout>
 
@@ -100,7 +105,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="添加"
+            android:textColor="#65558F"
             android:textSize="12sp" />
     </LinearLayout>
 
 </LinearLayout>
+
