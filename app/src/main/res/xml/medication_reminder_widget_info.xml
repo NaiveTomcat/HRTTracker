@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_reminder_desc"
+    android:minWidth="146dp"
+    android:minHeight="72dp"
+    android:minResizeWidth="146dp"
+    android:minResizeHeight="72dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="1"
+    android:maxResizeWidth="2048dp"
+    android:maxResizeHeight="72dp"
+    android:resizeMode="horizontal"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen" />

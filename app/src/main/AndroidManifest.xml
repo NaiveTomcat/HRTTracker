@@ -40,6 +40,32 @@
             android:name=".reminder.MedicationReminderReceiver"
             android:enabled="true"
             android:exported="false" />
+
+        <!-- 快速用药记录微件 -->
+        <receiver
+            android:name=".widget.QuickDoseWidgetReceiver"
+            android:label="@string/widget_quick_dose_label"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_dose_widget_info" />
+        </receiver>
+
+        <!-- 用药提醒微件 -->
+        <receiver
+            android:name=".widget.MedicationReminderWidgetReceiver"
+            android:label="@string/widget_reminder_label"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/medication_reminder_widget_info" />
+        </receiver>
     </application>
 
 </manifest>

@@ -187,4 +187,10 @@
     <string name="sublingual_tier_casual_desc">~5分钟</string>
     <string name="sublingual_tier_standard_desc">~10分钟</string>
     <string name="sublingual_tier_strict_desc">~15分钟</string>
+
+    <!-- Widget strings -->
+    <string name="widget_quick_dose_label">快速用药记录</string>
+    <string name="widget_quick_dose_desc">快速添加单条用药记录，支持确认流程</string>
+    <string name="widget_reminder_label">用药提醒</string>
+    <string name="widget_reminder_desc">显示最近一次计划用药时间和内容，并提示是否已用药</string>
 </resources>
