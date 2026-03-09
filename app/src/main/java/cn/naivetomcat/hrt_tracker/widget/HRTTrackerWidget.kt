@@ -64,7 +64,7 @@ internal val KEY_CONFIRMING = booleanPreferencesKey("widget_confirming")
 internal val KEY_ADDING = booleanPreferencesKey("widget_adding")
 
 // Width threshold separating narrow (2-col) from wide (3+-col) layouts
-private val WIDE_WIDTH_THRESHOLD = 220.dp
+private val WIDE_WIDTH_THRESHOLD = 170.dp
 
 /**
  * HRT Tracker 组合微件（用药提醒 + 快速添加记录）
@@ -84,7 +84,7 @@ class HRTTrackerWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Responsive(
         setOf(
             DpSize(130.dp, 58.dp),  // 2 cols × 1 row (narrow)
-            DpSize(270.dp, 58.dp),  // 3+ cols × 1 row (wide)
+            DpSize(200.dp, 58.dp),  // 3+ cols × 1 row (wide)
         )
     )
 
@@ -125,7 +125,8 @@ class HRTTrackerWidget : GlanceAppWidget() {
                 configuredPlan = configuredPlan,
                 allPlansEmpty = allPlans.isEmpty(),
                 reminderInfo = reminderInfo,
-                isConfirming = isConfirming
+                isConfirming = isConfirming,
+                isAdding = isAdding
             )
         }
     }
@@ -136,11 +137,12 @@ private fun HRTTrackerWidgetContent(
     configuredPlan: MedicationPlan?,
     allPlansEmpty: Boolean,
     reminderInfo: ScheduledDoseInfo?,
-    isConfirming: Boolean
+    isConfirming: Boolean,
+    isAdding: Boolean
 ) {
     val isWide = LocalSize.current.width >= WIDE_WIDTH_THRESHOLD
     // Use a smart-castable local variable for confirming state
-    val confirmingPlan = if (isConfirming) configuredPlan else null
+    val confirmingPlan = if (isConfirming || isAdding) configuredPlan else null
 
     Box(
         modifier = GlanceModifier
@@ -149,7 +151,7 @@ private fun HRTTrackerWidgetContent(
     ) {
         if (confirmingPlan != null && !isWide) {
             // Narrow + confirming: entire widget becomes two confirm/cancel buttons
-            NarrowConfirmingContent()
+            NarrowConfirmingContent(isAdding)
         } else {
             Column(modifier = GlanceModifier.fillMaxSize()) {
                 // ── Row 1: Medication Reminder (tertiary container) ────────────────
@@ -193,7 +195,7 @@ private fun HRTTrackerWidgetContent(
                 ) {
                     if (confirmingPlan != null) {
                         // Wide + confirming: confirm/cancel inline in this row
-                        WideConfirmingRow(confirmingPlan)
+                        WideConfirmingRow(confirmingPlan, isAdding)
                     } else {
                         QuickAddRowContent(
                             plan = configuredPlan,
@@ -282,7 +284,7 @@ private fun ReminderRowContent(
                 ) {
                     val timeLabel = when {
                         info.isTaken -> "已用药  ${formatScheduledTime(info.scheduledTime)}"
-                        info.isOverdue -> "过期未用药  ${formatScheduledTime(info.scheduledTime)}"
+                        info.isOverdue -> "漏服  ${formatScheduledTime(info.scheduledTime)}"
                         else -> "下次用药  ${formatScheduledTime(info.scheduledTime)}"
                     }
                     Text(
@@ -358,7 +360,7 @@ private fun QuickAddRowContent(
                 modifier = GlanceModifier.defaultWeight().wrapContentHeight()
             ) {
                 Text(
-                    text = plan.name,
+                    text = plan.ester.displayName,
                     style = TextStyle(
                         color = GlanceTheme.colors.onSurface,
                         fontSize = 12.sp,
@@ -367,7 +369,7 @@ private fun QuickAddRowContent(
                     maxLines = 1
                 )
                 Text(
-                    text = "${plan.doseMG}mg · ${plan.ester.displayName} · ${routeDisplayName(plan.route)}",
+                    text = "${routeDisplayName(plan.route)} · ${plan.doseMG}mg",
                     style = TextStyle(
                         color = GlanceTheme.colors.onSurfaceVariant,
                         fontSize = 10.sp
@@ -390,7 +392,7 @@ private fun QuickAddRowContent(
 
 /** 宽模式：确认行替换 Quick Add 区内容，提醒行保持不变 */
 @Composable
-private fun WideConfirmingRow(plan: MedicationPlan) {
+private fun WideConfirmingRow(plan: MedicationPlan, isAdding: Boolean) {
     Row(
         modifier = GlanceModifier.fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically
@@ -399,7 +401,7 @@ private fun WideConfirmingRow(plan: MedicationPlan) {
             modifier = GlanceModifier.defaultWeight().wrapContentHeight()
         ) {
             Text(
-                text = "确认添加用药记录？",
+                text = if (isAdding) "添加中..." else "确认添加用药记录？",
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 12.sp,
@@ -408,7 +410,7 @@ private fun WideConfirmingRow(plan: MedicationPlan) {
                 maxLines = 1
             )
             Text(
-                text = "${plan.name} · ${plan.doseMG}mg · ${routeDisplayName(plan.route)}",
+                text = "${plan.ester.displayName} · ${routeDisplayName(plan.route)} · ${plan.doseMG}mg",
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 10.sp
@@ -423,7 +425,8 @@ private fun WideConfirmingRow(plan: MedicationPlan) {
             onClick = actionRunCallback<CancelConfirmAction>(),
             backgroundColor = GlanceTheme.colors.errorContainer,
             contentColor = GlanceTheme.colors.onErrorContainer,
-            modifier = GlanceModifier.size(32.dp)
+            modifier = GlanceModifier.size(32.dp),
+            enabled = !isAdding
         )
         Spacer(modifier = GlanceModifier.width(4.dp))
         CircleIconButton(
@@ -432,29 +435,32 @@ private fun WideConfirmingRow(plan: MedicationPlan) {
             onClick = actionRunCallback<ConfirmDoseAction>(),
             backgroundColor = GlanceTheme.colors.primaryContainer,
             contentColor = GlanceTheme.colors.onPrimaryContainer,
-            modifier = GlanceModifier.size(32.dp)
+            modifier = GlanceModifier.size(32.dp),
+            enabled = !isAdding
         )
     }
 }
 
 /** 窄模式：确认状态下整个微件仅显示两个按钮，其余内容全部隐藏 */
 @Composable
-private fun NarrowConfirmingContent() {
+private fun NarrowConfirmingContent(isAdding: Boolean) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
             .padding(8.dp)
     ) {
         Button(
-            text = "✓ 确认添加",
+            text = if (isAdding) "添加中..." else "✓ 确认添加",
             onClick = actionRunCallback<ConfirmDoseAction>(),
-            modifier = GlanceModifier.fillMaxWidth().defaultWeight()
+            modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
+            enabled = !isAdding
         )
         Spacer(modifier = GlanceModifier.height(4.dp))
         Button(
             text = "✕ 取消",
             onClick = actionRunCallback<CancelConfirmAction>(),
-            modifier = GlanceModifier.fillMaxWidth().defaultWeight()
+            modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
+            enabled = !isAdding
         )
     }
 }
@@ -482,8 +488,14 @@ class ConfirmDoseAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
+        // Read the configured plan ID once before any state mutation.
         val prefs = getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)
         val configuredPlanId = prefs[KEY_CONFIGURED_PLAN_ID]
+
+        // Show "添加中..." immediately to give the user instant feedback and prevent
+        // duplicate taps while the DB write is in progress.
+        updateAppWidgetState(context, glanceId) { it[KEY_ADDING] = true }
+        HRTTrackerWidget().update(context, glanceId)
 
         val db = AppDatabase.getDatabase(context)
         val allPlans = db.medicationPlanDao().getEnabledPlans().first()
@@ -507,10 +519,8 @@ class ConfirmDoseAction : ActionCallback {
             )
         }
 
-        // Always return to main widget interface to prevent duplicate record submissions
-        updateAppWidgetState(context, glanceId) { prefs ->
-            prefs[KEY_CONFIRMING] = false
-        }
+        // Return to main widget view and clear loading state.
+        updateAppWidgetState(context, glanceId) { it[KEY_CONFIRMING] = false; it[KEY_ADDING] = false }
         HRTTrackerWidget().update(context, glanceId)
     }
 }

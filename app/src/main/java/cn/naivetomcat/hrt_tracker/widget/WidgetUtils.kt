@@ -107,6 +107,7 @@ object WidgetUtils {
         val lastPast = scheduledTimes.filter { it.isBefore(now) }.maxOrNull()
         val nextFuture = scheduledTimes.filter { !it.isBefore(now) }.minOrNull()
 
+        /** Standard ±[TAKEN_WINDOW_HOURS] check for a given scheduled time. */
         fun isTakenAt(time: LocalDateTime): Boolean {
             val h = localDateTimeToHours(time)
             return recentActualEvents.any { actual ->
@@ -116,14 +117,42 @@ object WidgetUtils {
             }
         }
 
+        /**
+         * Extended check for whether the past scheduled dose has been fulfilled.
+         * A catch-up dose taken at any point during the overdue display window
+         * (from [fromH] − [TAKEN_WINDOW_HOURS] up to, but not overlapping, the next dose's own
+         * window) is counted as satisfying the missed scheduled dose.
+         *
+         * The [TAKEN_WINDOW_HOURS] subtraction on [fromH] mirrors the ±window logic of
+         * [isTakenAt], so a dose recorded slightly before the scheduled time is still counted.
+         */
+        fun isTakenBetween(fromH: Double, toExclusiveH: Double): Boolean {
+            return recentActualEvents.any { actual ->
+                actual.route == plan.route &&
+                    actual.ester == plan.ester &&
+                    actual.timeH >= fromH - TAKEN_WINDOW_HOURS &&
+                    actual.timeH < toExclusiveH
+            }
+        }
+
         if (lastPast == null) {
             return nextFuture?.let { ScheduledDoseInfo(plan, it, isTakenAt(it), false) }
         }
 
-        val lastPastTaken = isTakenAt(lastPast)
+        val lastPastH = localDateTimeToHours(lastPast)
+        val nextFutureH = nextFuture?.let { localDateTimeToHours(it) }
+
+        // Consider the past dose taken if any matching dose was recorded from the scheduled
+        // time all the way up to (but not within the window of) the next scheduled dose.
+        // This allows catch-up doses to clear the "漏服" state immediately.
+        val lastPastTaken = isTakenBetween(
+            fromH = lastPastH,
+            toExclusiveH = nextFutureH?.minus(TAKEN_WINDOW_HOURS) ?: (nowH + TAKEN_WINDOW_HOURS)
+        )
+
         return if (!lastPastTaken && nextFuture != null) {
-            val timeSince = nowH - localDateTimeToHours(lastPast)
-            val timeToNext = localDateTimeToHours(nextFuture) - nowH
+            val timeSince = nowH - lastPastH
+            val timeToNext = nextFutureH!! - nowH
             if (timeSince <= timeToNext) {
                 ScheduledDoseInfo(plan, lastPast, false, isOverdue = true)
             } else {
