@@ -52,6 +52,7 @@ import cn.naivetomcat.hrt_tracker.data.displayName
 import cn.naivetomcat.hrt_tracker.pk.AntiAndrogen
 import cn.naivetomcat.hrt_tracker.pk.DoseEvent
 import cn.naivetomcat.hrt_tracker.pk.Route
+import cn.naivetomcat.hrt_tracker.pk.displayName as antiAndrogenDisplayName
 import cn.naivetomcat.hrt_tracker.ui.icons.TablerGenderAndrogyne
 import cn.naivetomcat.hrt_tracker.ui.theme.HRTTrackerTheme
 import cn.naivetomcat.hrt_tracker.widget.WidgetUtils.routeDisplayName
@@ -209,7 +210,7 @@ private fun PlanConfigItem(
                 val aaType = plan.extras[DoseEvent.ExtraKey.ANTI_ANDROGEN_TYPE]?.toInt()?.let {
                     AntiAndrogen.values().getOrElse(it) { AntiAndrogen.CPA }
                 } ?: AntiAndrogen.CPA
-                antiAndrogenName(aaType)
+                aaType.antiAndrogenDisplayName
             } else {
                 plan.ester.displayName
             }
@@ -230,11 +231,4 @@ private fun routeIconForConfig(route: Route) = when (route) {
     Route.PATCH_APPLY -> Icons.Filled.AddBox
     Route.PATCH_REMOVE -> Icons.Filled.RemoveCircle
     Route.ANTIANDROGEN -> TablerGenderAndrogyne
-}
-
-private fun antiAndrogenName(aa: AntiAndrogen) = when (aa) {
-    AntiAndrogen.CPA -> "醋酸环丙孕酮"
-    AntiAndrogen.MPA -> "醋酸甲羟孕酮"
-    AntiAndrogen.BICALUTAMIDE -> "比卡鲁胺"
-    AntiAndrogen.SPIRONOLACTONE -> "螺内酯"
 }

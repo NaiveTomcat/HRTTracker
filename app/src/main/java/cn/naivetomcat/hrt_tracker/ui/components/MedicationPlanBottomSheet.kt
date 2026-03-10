@@ -820,7 +820,7 @@ private fun AntiAndrogenSelectionSection(
                         else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                     }
                 ) {
-                    val aaText = aa.name
+                    val aaText = getAntiAndrogenDisplayName(aa)
                     Box(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center

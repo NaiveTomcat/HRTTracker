@@ -4,6 +4,7 @@ import cn.naivetomcat.hrt_tracker.pk.AntiAndrogen
 import cn.naivetomcat.hrt_tracker.pk.DoseEvent
 import cn.naivetomcat.hrt_tracker.pk.Ester
 import cn.naivetomcat.hrt_tracker.pk.Route
+import cn.naivetomcat.hrt_tracker.pk.displayName as antiAndrogenDisplayName
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.util.UUID
@@ -75,12 +76,7 @@ data class MedicationPlan(
             val aaType = extras[DoseEvent.ExtraKey.ANTI_ANDROGEN_TYPE]?.toInt()?.let {
                 AntiAndrogen.values().getOrElse(it) { AntiAndrogen.CPA }
             } ?: AntiAndrogen.CPA
-            when (aaType) {
-                AntiAndrogen.CPA -> "醋酸环丙孕酮"
-                AntiAndrogen.MPA -> "醋酸甲羟孕酮"
-                AntiAndrogen.BICALUTAMIDE -> "比卡鲁胺"
-                AntiAndrogen.SPIRONOLACTONE -> "螺内酯"
-            }
+            aaType.antiAndrogenDisplayName
         } else {
             ester.displayName
         }
