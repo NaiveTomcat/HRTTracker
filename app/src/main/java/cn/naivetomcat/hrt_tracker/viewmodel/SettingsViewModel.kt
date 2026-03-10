@@ -27,6 +27,7 @@ sealed class UpdateCheckResult {
     data object Idle : UpdateCheckResult()
     data object Checking : UpdateCheckResult()
     data class UpdateAvailable(val tagName: String, val releaseUrl: String) : UpdateCheckResult()
+    data class DebugBuild(val tagName: String, val releaseUrl: String) : UpdateCheckResult()
     data object UpToDate : UpdateCheckResult()
     data object Error : UpdateCheckResult()
 }
@@ -138,10 +139,13 @@ class SettingsViewModel(
             val release = withContext(Dispatchers.IO) {
                 UpdateChecker.fetchLatestRelease()
             }
+            val isDebug = versionName.contains("debug", ignoreCase = true)
             _updateCheckResult.value = when {
                 release == null -> UpdateCheckResult.Error
                 UpdateChecker.isNewerVersion(release.tagName, versionName) ->
                     UpdateCheckResult.UpdateAvailable(release.tagName, release.releaseUrl)
+                isDebug ->
+                    UpdateCheckResult.DebugBuild(release.tagName, release.releaseUrl)
                 else -> UpdateCheckResult.UpToDate
             }
         } catch (e: Exception) {

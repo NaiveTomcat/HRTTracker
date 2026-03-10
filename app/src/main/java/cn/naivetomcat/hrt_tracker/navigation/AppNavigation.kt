@@ -210,6 +210,33 @@ fun AppNavigation(
         )
     }
 
+    // Debug 版本时提示下载 Release
+    if (updateCheckResult is UpdateCheckResult.DebugBuild) {
+        val result = updateCheckResult as UpdateCheckResult.DebugBuild
+        AlertDialog(
+            onDismissRequest = { settingsViewModel.dismissUpdateCheckResult() },
+            title = { Text(stringResource(R.string.update_available_title)) },
+            text = {
+                Text(stringResource(R.string.update_debug_content, result.tagName))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        uriHandler.openUri(result.releaseUrl)
+                        settingsViewModel.dismissUpdateCheckResult()
+                    }
+                ) {
+                    Text(stringResource(R.string.update_go_to_release))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { settingsViewModel.dismissUpdateCheckResult() }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing.only(
             WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
