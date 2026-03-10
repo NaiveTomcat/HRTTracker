@@ -2,6 +2,7 @@ package cn.naivetomcat.hrt_tracker.widget
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
@@ -72,6 +73,7 @@ internal val KEY_ADDING = booleanPreferencesKey("widget_adding")
 
 // Width threshold separating narrow (2-col) from wide (3+-col) layouts
 private val WIDE_WIDTH_THRESHOLD = 170.dp
+private const val TAG = "HRTTrackerWidget"
 
 /**
  * HRT Tracker 组合微件（用药提醒 + 快速添加记录）
@@ -101,40 +103,68 @@ class HRTTrackerWidget : GlanceAppWidget() {
         SizeMode.Responsive(setOf(DpSize(200.dp, 58.dp)))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        Log.d(TAG, "provideGlance start id=$id")
         val db = AppDatabase.getDatabase(context)
 
         // Load all data outside provideContent (suspend functions only allowed here)
         val allPlans = db.medicationPlanDao().getEnabledPlans().first()
-            .map { it.toMedicationPlan() }
+            .mapNotNull { entity ->
+                runCatching { entity.toMedicationPlan() }
+                    .onFailure { e -> Log.e(TAG, "plan parse failed, skip id=${entity.id}", e) }
+                    .getOrNull()
+            }
+        Log.d(TAG, "provideGlance loaded plans count=${allPlans.size} id=$id")
 
         val lookbackH = System.currentTimeMillis() / 3600000.0 - 48.0
         val recentEvents: List<DoseEvent> = db.doseEventDao()
             .getEventsByTimeRange(lookbackH, Double.MAX_VALUE)
-            .map { it.toDoseEvent() }
+            .mapNotNull { entity ->
+                runCatching { entity.toDoseEvent() }
+                    .onFailure { e -> Log.e(TAG, "event parse failed, skip id=${entity.id}", e) }
+                    .getOrNull()
+            }
+        Log.d(TAG, "provideGlance loaded recentEvents count=${recentEvents.size} id=$id")
+
+        val state = getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
+        val configuredPlanIdInState = state[KEY_CONFIGURED_PLAN_ID]
+        val resolvedConfiguredPlan = if (configuredPlanIdInState != null) {
+            allPlans.find { it.id.toString() == configuredPlanIdInState } ?: allPlans.firstOrNull()
+        } else {
+            allPlans.firstOrNull()
+        }
+
+        // Persist fallback plan so the widget won't stay in an unconfigured state.
+        if (resolvedConfiguredPlan != null && configuredPlanIdInState != resolvedConfiguredPlan.id.toString()) {
+            updateAppWidgetState(context, id) { prefs ->
+                prefs[KEY_CONFIGURED_PLAN_ID] = resolvedConfiguredPlan.id.toString()
+            }
+            Log.i(
+                TAG,
+                "provideGlance normalized configuredPlanId from=$configuredPlanIdInState to=${resolvedConfiguredPlan.id} id=$id"
+            )
+        }
+
+        val reminderInfo = runCatching {
+            resolvedConfiguredPlan?.let {
+                WidgetUtils.findRelevantScheduledDose(listOf(it), recentEvents)
+            }
+        }.onFailure { e ->
+            Log.e(TAG, "findRelevantScheduledDose failed id=$id", e)
+        }.getOrNull()
 
         provideContent {
             // Read per-widget state inside composable (only accessible here via currentState)
             val prefs = currentState<Preferences>()
-            val configuredPlanId = prefs[KEY_CONFIGURED_PLAN_ID]
             val isConfirming = prefs[KEY_CONFIRMING] == true
             val isAdding = prefs[KEY_ADDING] == true
 
-            // Resolve configured plan; fall back to first enabled plan
-            val configuredPlan = if (configuredPlanId != null) {
-                allPlans.find { it.id.toString() == configuredPlanId }
-                    ?: allPlans.firstOrNull()
-            } else {
-                allPlans.firstOrNull()
-            }
-
-            val reminderInfo = if (configuredPlan != null) {
-                WidgetUtils.findRelevantScheduledDose(listOf(configuredPlan), recentEvents)
-            } else {
-                null
-            }
+            Log.d(
+                TAG,
+                "provideGlance render configuredPlanId=${resolvedConfiguredPlan?.id} confirming=$isConfirming adding=$isAdding hasReminder=${reminderInfo != null} id=$id"
+            )
 
             HRTTrackerWidgetContent(
-                configuredPlan = configuredPlan,
+                configuredPlan = resolvedConfiguredPlan,
                 allPlansEmpty = allPlans.isEmpty(),
                 reminderInfo = reminderInfo,
                 isConfirming = isConfirming,
@@ -519,6 +549,7 @@ class StartConfirmAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
+        Log.d(TAG, "StartConfirmAction id=$glanceId")
         updateAppWidgetState(context, glanceId) { prefs ->
             prefs[KEY_CONFIRMING] = true
         }
@@ -533,9 +564,11 @@ class ConfirmDoseAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
+        Log.d(TAG, "ConfirmDoseAction start id=$glanceId")
         // Read the configured plan ID once before any state mutation.
         val prefs = getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)
         val configuredPlanId = prefs[KEY_CONFIGURED_PLAN_ID]
+        Log.d(TAG, "ConfirmDoseAction configuredPlanId=$configuredPlanId id=$glanceId")
 
         // Show "添加中..." immediately to give the user instant feedback and prevent
         // duplicate taps while the DB write is in progress.
@@ -550,6 +583,7 @@ class ConfirmDoseAction : ActionCallback {
         } else {
             allPlans.firstOrNull()
         }
+        Log.d(TAG, "ConfirmDoseAction resolvedPlan=${plan?.id} allPlans=${allPlans.size} id=$glanceId")
         if (plan != null) {
             db.doseEventDao().upsertEvent(
                 DoseEventEntity.fromDoseEvent(
@@ -562,11 +596,15 @@ class ConfirmDoseAction : ActionCallback {
                     )
                 )
             )
+            Log.i(TAG, "ConfirmDoseAction upsert success planId=${plan.id} id=$glanceId")
+        } else {
+            Log.w(TAG, "ConfirmDoseAction skipped upsert: no available plan id=$glanceId")
         }
 
         // Return to main widget view and clear loading state.
         updateAppWidgetState(context, glanceId) { it[KEY_CONFIRMING] = false; it[KEY_ADDING] = false }
         HRTTrackerWidget().update(context, glanceId)
+        Log.d(TAG, "ConfirmDoseAction finish id=$glanceId")
     }
 }
 
@@ -577,6 +615,7 @@ class CancelConfirmAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
+        Log.d(TAG, "CancelConfirmAction id=$glanceId")
         updateAppWidgetState(context, glanceId) { prefs ->
             prefs[KEY_CONFIRMING] = false
         }

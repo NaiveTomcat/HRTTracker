@@ -19,3 +19,14 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# WorkManager/Glance: InputMerger is instantiated reflectively from class name.
+# Keep implementations and their public no-arg constructors for release builds.
+-keep class * extends androidx.work.InputMerger {
+	public <init>();
+}
+
+# Explicit keep for default merger used by WorkManager.
+-keep class androidx.work.OverwritingInputMerger {
+	public <init>();
+}

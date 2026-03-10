@@ -3,6 +3,7 @@ package cn.naivetomcat.hrt_tracker.widget
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
@@ -73,7 +74,10 @@ class HRTTrackerWidgetConfigActivity : ComponentActivity() {
             AppWidgetManager.INVALID_APPWIDGET_ID
         ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
 
+        Log.d(TAG, "onCreate appWidgetId=$appWidgetId")
+
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+            Log.e(TAG, "Invalid appWidgetId, finish config activity")
             finish()
             return
         }
@@ -83,13 +87,16 @@ class HRTTrackerWidgetConfigActivity : ComponentActivity() {
                 WidgetConfigScreen(
                     onPlanSelected = { plan ->
                         lifecycleScope.launch {
+                            Log.d(TAG, "onPlanSelected planId=${plan.id} appWidgetId=$appWidgetId")
                             val glanceId = GlanceAppWidgetManager(this@HRTTrackerWidgetConfigActivity)
                                 .getGlanceIdBy(appWidgetId)
+                            Log.d(TAG, "resolved glanceId=$glanceId for appWidgetId=$appWidgetId")
                             updateAppWidgetState(this@HRTTrackerWidgetConfigActivity, glanceId) { prefs ->
                                 prefs[KEY_CONFIGURED_PLAN_ID] = plan.id.toString()
                                 prefs[KEY_CONFIRMING] = false
                             }
                             HRTTrackerWidget().update(this@HRTTrackerWidgetConfigActivity, glanceId)
+                            Log.i(TAG, "widget configured success planId=${plan.id} appWidgetId=$appWidgetId")
                             setResult(RESULT_OK, Intent().putExtra(
                                 AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId
                             ))
@@ -100,6 +107,10 @@ class HRTTrackerWidgetConfigActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "HRTWidgetConfig"
     }
 }
 
