@@ -8,6 +8,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.materialIcon
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -86,7 +89,7 @@ class NotificationHelper(private val context: Context) {
 
         // 构建通知
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // TODO: 替换为应用图标
+            .setSmallIcon(R.mipmap.ic_launcher) // TODO: 替换为应用图标
             .setContentTitle("用药提醒：$planName")
             .setContentText(description)
             .setStyle(NotificationCompat.BigTextStyle().bigText(description))
