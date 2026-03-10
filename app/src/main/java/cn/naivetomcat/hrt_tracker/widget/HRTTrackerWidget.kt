@@ -1,6 +1,8 @@
 package cn.naivetomcat.hrt_tracker.widget
 
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -20,6 +22,7 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.PreviewSizeMode
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
@@ -53,9 +56,13 @@ import cn.naivetomcat.hrt_tracker.data.DoseEventEntity
 import cn.naivetomcat.hrt_tracker.data.MedicationPlan
 import cn.naivetomcat.hrt_tracker.data.displayName
 import cn.naivetomcat.hrt_tracker.pk.DoseEvent
+import cn.naivetomcat.hrt_tracker.pk.Ester
+import cn.naivetomcat.hrt_tracker.pk.Route
 import cn.naivetomcat.hrt_tracker.widget.WidgetUtils.formatScheduledTime
 import cn.naivetomcat.hrt_tracker.widget.WidgetUtils.routeDisplayName
 import kotlinx.coroutines.flow.first
+import java.time.LocalDate
+import java.time.LocalTime
 import java.util.UUID
 
 // State preference keys (per widget instance via PreferencesGlanceStateDefinition)
@@ -87,6 +94,11 @@ class HRTTrackerWidget : GlanceAppWidget() {
             DpSize(200.dp, 58.dp),  // 3+ cols × 1 row (wide)
         )
     )
+
+    // Android 15+ generated preview: render at the wide size so all content is visible.
+    @get:RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    override val previewSizeMode: PreviewSizeMode =
+        SizeMode.Responsive(setOf(DpSize(200.dp, 58.dp)))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val db = AppDatabase.getDatabase(context)
@@ -128,6 +140,39 @@ class HRTTrackerWidget : GlanceAppWidget() {
                 isConfirming = isConfirming,
                 isAdding = isAdding
             )
+        }
+    }
+
+    /**
+     * Android 15+ 生成式预览（widget picker 动态缩略图）。
+     * 使用静态假数据，不访问数据库；一次性合成，无重组。
+     */
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    override suspend fun providePreview(context: Context, widgetCategory: Int) {
+        val previewPlan = MedicationPlan(
+            name = "戊酸雌二醇",
+            route = Route.ORAL,
+            ester = Ester.EV,
+            doseMG = 2.0,
+            scheduleType = MedicationPlan.ScheduleType.DAILY,
+            timeOfDay = listOf(LocalTime.of(8, 0))
+        )
+        val previewInfo = ScheduledDoseInfo(
+            plan = previewPlan,
+            scheduledTime = LocalDate.now().atTime(8, 0),
+            isTaken = false,
+            isOverdue = false
+        )
+        provideContent {
+            GlanceTheme {
+                HRTTrackerWidgetContent(
+                    configuredPlan = previewPlan,
+                    allPlansEmpty = false,
+                    reminderInfo = previewInfo,
+                    isConfirming = false,
+                    isAdding = false
+                )
+            }
         }
     }
 }

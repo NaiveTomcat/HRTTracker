@@ -15,7 +15,7 @@ ksp = "2.3.6"
 lifecycleViewmodel = "2.10.0"
 kotlinxSerialization = "1.10.0"
 datastore = "1.2.0"
-glance = "1.1.1"
+glance = "1.2.0-rc01"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

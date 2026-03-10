@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pill icon for previewLayout (shape drawables only — VectorDrawables are unreliable in RemoteViews context) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Pill outline (rounded rectangle rotated 45°; approximate with large corner radius) -->
+    <item
+        android:top="3dp"
+        android:left="3dp"
+        android:right="3dp"
+        android:bottom="3dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#65558F" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <!-- Dividing line across middle -->
+    <item
+        android:top="7dp"
+        android:bottom="7dp"
+        android:left="3dp"
+        android:right="3dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFBFE" />
+        </shape>
+    </item>
+</layer-list>

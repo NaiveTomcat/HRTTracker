@@ -1,16 +1,22 @@
 package cn.naivetomcat.hrt_tracker
 
+import android.os.Build
 import android.os.Bundle
+import androidx.annotation.RequiresApi
+import android.appwidget.AppWidgetProviderInfo
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.collection.intSetOf
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cn.naivetomcat.hrt_tracker.data.AppDatabase
 import cn.naivetomcat.hrt_tracker.data.ThemeMode
@@ -26,13 +32,20 @@ import cn.naivetomcat.hrt_tracker.viewmodel.MedicationPlanViewModel
 import cn.naivetomcat.hrt_tracker.viewmodel.MedicationPlanViewModelFactory
 import cn.naivetomcat.hrt_tracker.viewmodel.SettingsViewModel
 import cn.naivetomcat.hrt_tracker.viewmodel.SettingsViewModelFactory
+import cn.naivetomcat.hrt_tracker.widget.HRTTrackerWidgetReceiver
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        
+        // Publish the Android 15+ generated widget preview on every app launch.
+        // The system rate-limits this to ~2 calls per hour, so the overhead is negligible.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            publishWidgetPreview()
+        }
+
         // 初始化数据库和仓库
         val database = AppDatabase.getDatabase(applicationContext)
         val doseEventRepository = DoseEventRepository(database.doseEventDao())
@@ -102,6 +115,16 @@ class MainActivity : ComponentActivity() {
                     medicationPlanViewModel = medicationPlanViewModel
                 )
             }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    private fun publishWidgetPreview() {
+        lifecycleScope.launch {
+            GlanceAppWidgetManager(applicationContext).setWidgetPreviews(
+                HRTTrackerWidgetReceiver::class,
+                intSetOf(AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN)
+            )
         }
     }
 }

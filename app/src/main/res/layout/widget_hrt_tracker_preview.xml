@@ -22,7 +22,7 @@
         <ImageView
             android:layout_width="18dp"
             android:layout_height="18dp"
-            android:src="@drawable/ic_widget_alarm" />
+            android:src="@drawable/ic_widget_alarm_preview" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -74,7 +74,7 @@
         <ImageView
             android:layout_width="18dp"
             android:layout_height="18dp"
-            android:src="@drawable/ic_widget_medication" />
+            android:src="@drawable/ic_widget_medication_preview" />
 
         <LinearLayout
             android:layout_width="0dp"
