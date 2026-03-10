@@ -60,7 +60,11 @@
     <string name="update_check_error">检查失败，请稍后重试</string>
     <string name="update_available_title">发现新版本</string>
     <string name="update_available_content">发现新版本 %1$s，是否前往下载？</string>
+    <string name="update_debug_content">当前为 Debug 版本，最新 Release：%1$s，是否前往下载？</string>
     <string name="update_go_to_release">前往下载</string>
+    <string name="update_available_hint">最新版本：%1$s</string>
+    <string name="update_debug_hint">当前为 Debug 版本，最新 Release：%1$s</string>
+    <string name="version_copied">版本号已复制</string>
 
     <string name="about_copyright_title">版权信息</string>
     <string name="about_copyright_content">本应用 HRT Tracker 的作者为 NaiveTomcat。\n\n本应用受到 SmirnovaOyama/Oyama-s-HRT-Tracker 项目启发；药代动力学模型与参数实现参考并使用了 LaoZhong-Mihari/HRT-Recorder-PKcomponent-Test 项目。\n\n相关名称与仓库标识归其各自权利人所有。</string>
