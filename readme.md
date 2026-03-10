@@ -1,7 +1,8 @@
 # HRT Tracker
 
 [![Build Debug APK](https://github.com/NaiveTomcat/HRTTracker/actions/workflows/apkdebug.yml/badge.svg?branch=master)](https://github.com/NaiveTomcat/HRTTracker/actions/workflows/apkdebug.yml)
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/NaiveTomcat/HRTTracker/total?style=plastic&logo=github&label=Downloads)
+
+[![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/NaiveTomcat/HRTTracker/total?style=flat&logo=github&label=Downloads)](https://github.com/NaiveTomcat/HRTTracker/releases/latest)
 
 一款面向 Android 的 HRT（激素替代治疗）记录与雌二醇浓度趋势工具。  
 你可以用它记录每日用药、设置用药方案与提醒，并查看基于药代动力学模型生成的浓度曲线。
