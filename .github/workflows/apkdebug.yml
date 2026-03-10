@@ -29,7 +29,7 @@ jobs:
         run: git describe --tags --always
 
       - name: Set app version
-        run: echo "app_version=$(git describe --tags --always)" >> $GITHUB_ENVPP
+        run: echo "app_version=$(git describe --tags --always)" >> $GITHUB_ENV
 
       # Set Current Date As Env Variable
       - name: Set current date as env variable
