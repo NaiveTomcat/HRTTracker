@@ -603,7 +603,9 @@ private fun UpdateSection(
         is UpdateCheckResult.UpToDate -> stringResource(R.string.update_up_to_date)
         is UpdateCheckResult.Error -> stringResource(R.string.update_check_error)
         is UpdateCheckResult.UpdateAvailable -> stringResource(R.string.update_available_hint, updateCheckResult.tagName)
+        is UpdateCheckResult.UpdateAvailableDismissed -> stringResource(R.string.update_available_hint, updateCheckResult.tagName)
         is UpdateCheckResult.DebugBuild -> stringResource(R.string.update_debug_hint, updateCheckResult.tagName)
+        is UpdateCheckResult.DebugBuildDismissed -> stringResource(R.string.update_debug_hint, updateCheckResult.tagName)
         else -> stringResource(R.string.update_idle_hint)
     }
     val versionCopiedText = stringResource(R.string.version_copied)

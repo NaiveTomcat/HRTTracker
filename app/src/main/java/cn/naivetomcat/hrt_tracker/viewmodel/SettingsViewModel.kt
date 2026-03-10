@@ -27,7 +27,9 @@ sealed class UpdateCheckResult {
     data object Idle : UpdateCheckResult()
     data object Checking : UpdateCheckResult()
     data class UpdateAvailable(val tagName: String, val releaseUrl: String) : UpdateCheckResult()
+    data class UpdateAvailableDismissed(val tagName: String) : UpdateCheckResult()
     data class DebugBuild(val tagName: String, val releaseUrl: String) : UpdateCheckResult()
+    data class DebugBuildDismissed(val tagName: String) : UpdateCheckResult()
     data object UpToDate : UpdateCheckResult()
     data object Error : UpdateCheckResult()
 }
@@ -127,10 +129,15 @@ class SettingsViewModel(
     }
 
     /**
-     * 重置更新检查结果为 Idle
+     * 关闭更新弹窗。若当前结果为 UpdateAvailable 或 DebugBuild，
+     * 则保留版本信息（转为 Dismissed 状态），否则重置为 Idle。
      */
     fun dismissUpdateCheckResult() {
-        _updateCheckResult.value = UpdateCheckResult.Idle
+        _updateCheckResult.value = when (val current = _updateCheckResult.value) {
+            is UpdateCheckResult.UpdateAvailable -> UpdateCheckResult.UpdateAvailableDismissed(current.tagName)
+            is UpdateCheckResult.DebugBuild -> UpdateCheckResult.DebugBuildDismissed(current.tagName)
+            else -> UpdateCheckResult.Idle
+        }
     }
 
     private suspend fun performUpdateCheck(versionName: String) {
