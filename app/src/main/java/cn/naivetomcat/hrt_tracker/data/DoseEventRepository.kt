@@ -28,14 +28,12 @@ class DoseEventRepository(private val dao: DoseEventDao) {
         val thirtyDaysAgo = currentTimeH - 24.0 * 30
         val recentEvents = dao.getEventsAfter(thirtyDaysAgo)
             .map { it.toDoseEvent() }
-            .filter { it.route != cn.naivetomcat.hrt_tracker.pk.Route.PATCH_REMOVE }
 
-        return if (recentEvents.size < 20) {
+        val doseEventCount = recentEvents.count { it.route != cn.naivetomcat.hrt_tracker.pk.Route.PATCH_REMOVE }
+        return if (doseEventCount < 20) {
             // 如果最近30天内不足20次给药，获取最近20次或全部
-            val allRecentEvents = dao.getRecentEvents(20)
+            dao.getRecentEvents(20)
                 .map { it.toDoseEvent() }
-                .filter { it.route != cn.naivetomcat.hrt_tracker.pk.Route.PATCH_REMOVE }
-            allRecentEvents
         } else {
             recentEvents
         }
