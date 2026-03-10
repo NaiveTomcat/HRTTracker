@@ -64,6 +64,7 @@
     <string name="update_go_to_release">前往下载</string>
     <string name="update_available_hint">最新版本：%1$s</string>
     <string name="update_debug_hint">当前为 Debug 版本，最新 Release：%1$s</string>
+    <string name="update_idle_hint">点击以检查更新</string>
     <string name="version_copied">版本号已复制</string>
 
     <string name="about_copyright_title">版权信息</string>
