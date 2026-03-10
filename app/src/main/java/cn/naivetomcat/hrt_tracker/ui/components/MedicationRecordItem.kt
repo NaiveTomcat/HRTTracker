@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import cn.naivetomcat.hrt_tracker.R
+import cn.naivetomcat.hrt_tracker.pk.AntiAndrogen
 import cn.naivetomcat.hrt_tracker.pk.DoseEvent
 import cn.naivetomcat.hrt_tracker.pk.Ester
 import cn.naivetomcat.hrt_tracker.pk.Route
@@ -31,6 +32,7 @@ import java.util.*
  * @param route 给药途径
  * @param doseMG 剂量（mg）
  * @param timeH 时间（小时）
+ * @param isAntiAndrogen 是否为抗雄激素药物（影响容器颜色）
  * @param modifier Modifier
  * @param onClick 点击回调
  */
@@ -41,10 +43,16 @@ fun MedicationRecordItem(
     route: Route,
     doseMG: Double,
     timeH: Double,
+    isAntiAndrogen: Boolean = false,
     is24Hour: Boolean = true,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null
 ) {
+    val containerColor = if (isAntiAndrogen) {
+        MaterialTheme.colorScheme.tertiaryContainer
+    } else {
+        MaterialTheme.colorScheme.secondaryContainer
+    }
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
@@ -54,7 +62,7 @@ fun MedicationRecordItem(
     ) {
         ListItem(
             colors = ListItemDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                containerColor = containerColor,
                 leadingIconColor = MaterialTheme.colorScheme.tertiary,
             ),
             overlineContent = {
@@ -139,13 +147,23 @@ fun MedicationRecordItem(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null
 ) {
-    val medicationName = getMedicationDisplayName(event.ester)
+    val isAntiAndrogen = event.route == Route.ANTIANDROGEN
+    val medicationName = if (isAntiAndrogen) {
+        getAntiAndrogenDisplayName(
+            event.extras[DoseEvent.ExtraKey.ANTI_ANDROGEN_TYPE]?.toInt()?.let {
+                AntiAndrogen.values().getOrElse(it) { AntiAndrogen.CPA }
+            } ?: AntiAndrogen.CPA
+        )
+    } else {
+        getMedicationDisplayName(event.ester)
+    }
     
     MedicationRecordItem(
         medicationName = medicationName,
         route = event.route,
         doseMG = event.doseMG,
         timeH = event.timeH,
+        isAntiAndrogen = isAntiAndrogen,
         is24Hour = is24Hour,
         modifier = modifier,
         onClick = onClick
@@ -153,7 +171,7 @@ fun MedicationRecordItem(
 }
 
 /**
- * 获取药品显示名称
+ * 获取药品显示名称（雌激素）
  */
 @Composable
 private fun getMedicationDisplayName(ester: Ester): String {
@@ -163,6 +181,19 @@ private fun getMedicationDisplayName(ester: Ester): String {
         Ester.EV -> stringResource(R.string.ester_ev)
         Ester.EC -> stringResource(R.string.ester_ec)
         Ester.EN -> stringResource(R.string.ester_en)
+    }
+}
+
+/**
+ * 获取抗雄药物显示名称
+ */
+@Composable
+internal fun getAntiAndrogenDisplayName(antiAndrogen: AntiAndrogen): String {
+    return when (antiAndrogen) {
+        AntiAndrogen.CPA -> stringResource(R.string.antiandrogen_cpa)
+        AntiAndrogen.MPA -> stringResource(R.string.antiandrogen_mpa)
+        AntiAndrogen.BICALUTAMIDE -> stringResource(R.string.antiandrogen_bicalutamide)
+        AntiAndrogen.SPIRONOLACTONE -> stringResource(R.string.antiandrogen_spironolactone)
     }
 }
 
@@ -268,6 +299,24 @@ private fun PreviewMedicationRecordItemPatchRemove() {
     }
 }
 
+@Preview(name = "抗雄激素 (比卡鲁胺)", showBackground = true)
+@Composable
+private fun PreviewMedicationRecordItemAntiAndrogen() {
+    HRTTrackerTheme {
+        Surface {
+            MedicationRecordItem(
+                medicationName = "比卡鲁胺",
+                route = Route.ANTIANDROGEN,
+                doseMG = 25.0,
+                timeH = System.currentTimeMillis() / 3600000.0,
+                isAntiAndrogen = true,
+                modifier = Modifier.padding(16.dp),
+                onClick = {}
+            )
+        }
+    }
+}
+
 @Preview(name = "小剂量显示", showBackground = true)
 @Composable
 private fun PreviewMedicationRecordItemSmallDose() {
@@ -314,10 +363,11 @@ private fun PreviewMedicationRecordList() {
                 )
                 
                 MedicationRecordItem(
-                    medicationName = "雌二醇",
-                    route = Route.SUBLINGUAL,
-                    doseMG = 1.0,
-                    timeH = currentTime - 1.0,
+                    medicationName = "比卡鲁胺",
+                    route = Route.ANTIANDROGEN,
+                    doseMG = 25.0,
+                    timeH = currentTime - 6.0,
+                    isAntiAndrogen = true,
                     onClick = {}
                 )
                 
@@ -350,6 +400,17 @@ private fun PreviewMedicationRecordItemFromEvent() {
                         timeH = currentTime,
                         doseMG = 2.0,
                         ester = Ester.E2
+                    ),
+                    onClick = {}
+                )
+                
+                MedicationRecordItem(
+                    event = DoseEvent(
+                        route = Route.ANTIANDROGEN,
+                        timeH = currentTime - 6.0,
+                        doseMG = 25.0,
+                        ester = Ester.E2,
+                        extras = mapOf(DoseEvent.ExtraKey.ANTI_ANDROGEN_TYPE to AntiAndrogen.BICALUTAMIDE.ordinal.toDouble())
                     ),
                     onClick = {}
                 )

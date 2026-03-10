@@ -71,6 +71,9 @@ internal class PrecomputedEventModel(
             }
 
             Route.PATCH_REMOVE -> { _ -> 0.0 }
+
+            // 抗雄药物不参与药代动力学计算，应在调用前过滤，这里仅作防御性处理
+            Route.ANTIANDROGEN -> { _ -> 0.0 }
         }
     }
 

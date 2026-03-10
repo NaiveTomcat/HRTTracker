@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.lerp
 import cn.naivetomcat.hrt_tracker.R
 import cn.naivetomcat.hrt_tracker.data.MedicationPlan
 import cn.naivetomcat.hrt_tracker.data.ThemeMode
+import cn.naivetomcat.hrt_tracker.pk.AntiAndrogen
 import cn.naivetomcat.hrt_tracker.pk.DoseEvent
 import cn.naivetomcat.hrt_tracker.pk.Ester
 import cn.naivetomcat.hrt_tracker.pk.Route
@@ -25,6 +26,7 @@ import cn.naivetomcat.hrt_tracker.ui.components.MedicationRecordBottomSheet
 import cn.naivetomcat.hrt_tracker.ui.components.MedicationRecordItem
 import cn.naivetomcat.hrt_tracker.ui.components.PatchMode
 import cn.naivetomcat.hrt_tracker.ui.components.RecordDefaults
+import cn.naivetomcat.hrt_tracker.ui.components.getAntiAndrogenDisplayName
 import cn.naivetomcat.hrt_tracker.ui.theme.HRTTrackerTheme
 import cn.naivetomcat.hrt_tracker.ui.utils.getRouteDisplayName
 import cn.naivetomcat.hrt_tracker.ui.utils.getRouteIcon
@@ -209,7 +211,7 @@ private fun MedicationRecordsScreenContent(
                                 Text(
                                     stringResource(
                                         R.string.records_quick_add_format,
-                                        getEsterDisplayName(plan.ester),
+                                        getPlanMedicationDisplayName(plan),
                                         plan.doseMG,
                                         getRouteDisplayName(plan.route)
                                     )
@@ -294,7 +296,10 @@ private fun DoseEvent.toRecordDefaults(): RecordDefaults {
         patchRateUgPerDay = extras[DoseEvent.ExtraKey.RELEASE_RATE_UG_PER_DAY] ?: 0.0,
         sublingualTier = extras[DoseEvent.ExtraKey.SUBLINGUAL_TIER]?.toInt()?.let { tier ->
             SublingualTier.values().getOrElse(tier) { SublingualTier.STANDARD }
-        } ?: SublingualTier.STANDARD
+        } ?: SublingualTier.STANDARD,
+        antiAndrogen = extras[DoseEvent.ExtraKey.ANTI_ANDROGEN_TYPE]?.toInt()?.let {
+            AntiAndrogen.values().getOrElse(it) { AntiAndrogen.CPA }
+        } ?: AntiAndrogen.CPA
     )
 }
 
@@ -302,6 +307,18 @@ private fun currentTimeHAtMinutePrecision(): Double {
     val nowMs = System.currentTimeMillis()
     val minuteAlignedMs = (nowMs / 60000L) * 60000L
     return minuteAlignedMs / 3600000.0
+}
+
+@Composable
+private fun getPlanMedicationDisplayName(plan: MedicationPlan): String {
+    return if (plan.route == Route.ANTIANDROGEN) {
+        val aaType = plan.extras[DoseEvent.ExtraKey.ANTI_ANDROGEN_TYPE]?.toInt()?.let {
+            AntiAndrogen.values().getOrElse(it) { AntiAndrogen.CPA }
+        } ?: AntiAndrogen.CPA
+        getAntiAndrogenDisplayName(aaType)
+    } else {
+        getEsterDisplayName(plan.ester)
+    }
 }
 
 @Composable

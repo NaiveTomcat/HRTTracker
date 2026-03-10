@@ -35,7 +35,8 @@ data class RecordDefaults(
     val doseMG: Double = 0.0,
     val patchMode: PatchMode = PatchMode.DOSE,
     val patchRateUgPerDay: Double = 0.0,
-    val sublingualTier: SublingualTier = SublingualTier.STANDARD
+    val sublingualTier: SublingualTier = SublingualTier.STANDARD,
+    val antiAndrogen: AntiAndrogen = AntiAndrogen.CPA
 )
 
 /**
@@ -71,6 +72,13 @@ fun MedicationRecordBottomSheet(
     var selectedEster by remember(eventToEdit, showBottomSheet) { 
         mutableStateOf(eventToEdit?.ester ?: defaults?.ester ?: Ester.EV) 
     }
+    var selectedAntiAndrogen by remember(eventToEdit, showBottomSheet) {
+        mutableStateOf(
+            eventToEdit?.extras?.get(DoseEvent.ExtraKey.ANTI_ANDROGEN_TYPE)?.toInt()?.let {
+                AntiAndrogen.values().getOrElse(it) { AntiAndrogen.CPA }
+            } ?: defaults?.antiAndrogen ?: AntiAndrogen.CPA
+        )
+    }
     var selectedDateTime by remember(eventToEdit, showBottomSheet) { 
         mutableStateOf(
             if (eventToEdit != null) {
@@ -100,10 +108,12 @@ fun MedicationRecordBottomSheet(
     }
     var e2DoseText by remember(eventToEdit, showBottomSheet) { 
         mutableStateOf(
-            if (eventToEdit != null && eventToEdit.route != Route.PATCH_APPLY) {
+            if (eventToEdit != null && eventToEdit.route != Route.PATCH_APPLY &&
+                eventToEdit.route != Route.ANTIANDROGEN) {
                 val e2 = eventToEdit.doseMG * Ester.toE2Factor(eventToEdit.ester)
                 String.format("%.3f", e2)
-            } else if (defaults != null && defaults.doseMG > 0) {
+            } else if (defaults != null && defaults.doseMG > 0 &&
+                defaults.route != Route.ANTIANDROGEN) {
                 val e2 = defaults.doseMG * Ester.toE2Factor(defaults.ester)
                 String.format("%.3f", e2)
             } else {
@@ -215,12 +225,19 @@ fun MedicationRecordBottomSheet(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // 药物类型选择
-                EsterSelector(
-                    selectedEster = selectedEster,
-                    availableEsters = availableEsters,
-                    onEsterSelected = { selectedEster = it }
-                )
+                // 药物类型选择（雌激素途径）/ 抗雄药物类型选择（抗雄途径）
+                if (selectedRoute == Route.ANTIANDROGEN) {
+                    AntiAndrogenSelector(
+                        selectedAntiAndrogen = selectedAntiAndrogen,
+                        onAntiAndrogenSelected = { selectedAntiAndrogen = it }
+                    )
+                } else {
+                    EsterSelector(
+                        selectedEster = selectedEster,
+                        availableEsters = availableEsters,
+                        onEsterSelected = { selectedEster = it }
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -246,6 +263,15 @@ fun MedicationRecordBottomSheet(
                                 lastEditedField = DoseField.RAW
                             },
                             onModeChange = { patchMode = PatchMode.RATE }
+                        )
+                    }
+                    selectedRoute == Route.ANTIANDROGEN -> {
+                        AntiAndrogenDoseInput(
+                            rawDoseText = rawDoseText,
+                            onRawDoseChange = {
+                                rawDoseText = it
+                                lastEditedField = DoseField.RAW
+                            }
                         )
                     }
                     else -> {
@@ -333,12 +359,17 @@ fun MedicationRecordBottomSheet(
                                 extras[DoseEvent.ExtraKey.SUBLINGUAL_TIER] = sublingualTier.ordinal.toDouble()
                             }
 
+                            // 添加抗雄药物类型
+                            if (selectedRoute == Route.ANTIANDROGEN) {
+                                extras[DoseEvent.ExtraKey.ANTI_ANDROGEN_TYPE] = selectedAntiAndrogen.ordinal.toDouble()
+                            }
+
                             val event = DoseEvent(
                                 id = eventToEdit?.id ?: UUID.randomUUID(),
                                 route = selectedRoute,
                                 timeH = timeH,
                                 doseMG = doseMG,
-                                ester = selectedEster,
+                                ester = if (selectedRoute == Route.ANTIANDROGEN) Ester.E2 else selectedEster,
                                 extras = extras
                             )
                             onSave(event)
@@ -862,6 +893,7 @@ private fun getAvailableEstersForRoute(route: Route): List<Ester> {
         Route.SUBLINGUAL -> listOf(Ester.E2, Ester.EV)
         Route.GEL -> listOf(Ester.E2)
         Route.PATCH_APPLY, Route.PATCH_REMOVE -> listOf(Ester.E2)
+        Route.ANTIANDROGEN -> listOf(Ester.E2) // 抗雄药物使用E2作为占位符
     }
 }
 
@@ -902,6 +934,95 @@ private fun getSublingualTierDescription(tier: SublingualTier): String {
         SublingualTier.CASUAL -> stringResource(R.string.sublingual_tier_casual_desc)
         SublingualTier.STANDARD -> stringResource(R.string.sublingual_tier_standard_desc)
         SublingualTier.STRICT -> stringResource(R.string.sublingual_tier_strict_desc)
+    }
+}
+
+/**
+ * 抗雄药物类型选择器
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AntiAndrogenSelector(
+    selectedAntiAndrogen: AntiAndrogen,
+    onAntiAndrogenSelected: (AntiAndrogen) -> Unit
+) {
+    Column {
+        Text(
+            text = stringResource(R.string.record_sheet_antiandrogen_title),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        var expanded by remember { mutableStateOf(false) }
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it }
+        ) {
+            OutlinedTextField(
+                value = getAntiAndrogenDisplayName(selectedAntiAndrogen),
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                AntiAndrogen.values().forEach { aa ->
+                    DropdownMenuItem(
+                        text = {
+                            Column {
+                                Text(
+                                    getAntiAndrogenDisplayName(aa),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                        },
+                        onClick = {
+                            onAntiAndrogenSelected(aa)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 抗雄药物剂量输入（无E2等效换算）
+ */
+@Composable
+private fun AntiAndrogenDoseInput(
+    rawDoseText: String,
+    onRawDoseChange: (String) -> Unit
+) {
+    Column {
+        Text(
+            text = stringResource(R.string.record_sheet_dose_title),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        OutlinedTextField(
+            value = rawDoseText,
+            onValueChange = onRawDoseChange,
+            label = { Text(stringResource(R.string.record_sheet_dose_label)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                Text(stringResource(R.string.unit_mg), style = MaterialTheme.typography.bodySmall)
+            }
+        )
     }
 }
 

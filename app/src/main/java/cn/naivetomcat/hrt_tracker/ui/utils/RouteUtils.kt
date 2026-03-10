@@ -7,6 +7,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import cn.naivetomcat.hrt_tracker.R
 import cn.naivetomcat.hrt_tracker.pk.Route
+import cn.naivetomcat.hrt_tracker.ui.icons.TablerGenderAndrogyne
 
 /**
  * 根据给药途径获取对应的图标
@@ -19,6 +20,7 @@ fun getRouteIcon(route: Route): ImageVector {
         Route.GEL -> Icons.Filled.Soap                 // 凝胶
         Route.PATCH_APPLY -> Icons.Filled.AddBox       // 应用贴片
         Route.PATCH_REMOVE -> Icons.Filled.RemoveCircle // 移除贴片
+        Route.ANTIANDROGEN -> TablerGenderAndrogyne    // 抗雄激素
     }
 }
 
@@ -34,5 +36,6 @@ fun getRouteDisplayName(route: Route): String {
         Route.GEL -> stringResource(R.string.route_gel)
         Route.PATCH_APPLY -> stringResource(R.string.route_patch_apply)
         Route.PATCH_REMOVE -> stringResource(R.string.route_patch_remove)
+        Route.ANTIANDROGEN -> stringResource(R.string.route_antiandrogen)
     }
 }

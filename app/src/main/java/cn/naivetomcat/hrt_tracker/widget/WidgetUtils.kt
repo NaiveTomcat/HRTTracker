@@ -36,6 +36,7 @@ object WidgetUtils {
         Route.GEL -> "凝胶"
         Route.PATCH_APPLY -> "贴片"
         Route.PATCH_REMOVE -> "移除贴"
+        Route.ANTIANDROGEN -> "抗雄"
     }
 
     /**

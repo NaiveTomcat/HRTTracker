@@ -125,6 +125,12 @@
     <string name="route_gel">透皮凝胶</string>
     <string name="route_patch_apply">应用贴片</string>
     <string name="route_patch_remove">移除贴片</string>
+    <string name="route_antiandrogen">抗雄口服</string>
+
+    <string name="antiandrogen_cpa">醋酸环丙孕酮</string>
+    <string name="antiandrogen_mpa">醋酸甲羟孕酮</string>
+    <string name="antiandrogen_bicalutamide">比卡鲁胺</string>
+    <string name="antiandrogen_spironolactone">螺内酯</string>
 
     <string name="ester_e2">雌二醇</string>
     <string name="ester_eb">苯甲酸雌二醇</string>
@@ -144,6 +150,7 @@
     <string name="plan_sheet_interval_days_label">间隔天数</string>
     <string name="plan_sheet_route_title">给药途径</string>
     <string name="plan_sheet_ester_title">药物类型</string>
+    <string name="plan_sheet_antiandrogen_title">抗雄药物</string>
     <string name="plan_sheet_schedule_title">给药周期</string>
     <string name="plan_sheet_schedule_daily">每天</string>
     <string name="plan_sheet_schedule_weekly">每周</string>
@@ -166,6 +173,7 @@
     <string name="record_sheet_time_title">给药时间</string>
     <string name="record_sheet_route_title">给药途径</string>
     <string name="record_sheet_ester_title">药物类型</string>
+    <string name="record_sheet_antiandrogen_title">抗雄药物</string>
     <string name="record_sheet_dose_title">药物剂量</string>
     <string name="record_sheet_dose_label">剂量 (mg)</string>
     <string name="record_sheet_e2_equivalent_label">等效 E2 (mg)</string>

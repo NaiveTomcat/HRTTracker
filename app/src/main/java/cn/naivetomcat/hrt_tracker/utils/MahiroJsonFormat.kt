@@ -61,7 +61,8 @@ object MahiroJsonFormat {
         "sublingual" to Route.SUBLINGUAL,
         "gel" to Route.GEL,
         "patch_apply" to Route.PATCH_APPLY,
-        "patch_remove" to Route.PATCH_REMOVE
+        "patch_remove" to Route.PATCH_REMOVE,
+        "antiandrogen" to Route.ANTIANDROGEN
     )
 
     /** 本应用的 Route 枚举 → mahiro JSON 中的 route 字符串 */
@@ -73,7 +74,8 @@ object MahiroJsonFormat {
         "sublingualTheta" to DoseEvent.ExtraKey.SUBLINGUAL_THETA,
         "concentrationMgMl" to DoseEvent.ExtraKey.CONCENTRATION_MG_ML,
         "areaCm2" to DoseEvent.ExtraKey.AREA_CM2,
-        "releaseRateUgPerDay" to DoseEvent.ExtraKey.RELEASE_RATE_UG_PER_DAY
+        "releaseRateUgPerDay" to DoseEvent.ExtraKey.RELEASE_RATE_UG_PER_DAY,
+        "antiAndrogenType" to DoseEvent.ExtraKey.ANTI_ANDROGEN_TYPE
     )
 
     /** 本应用的 ExtraKey 枚举 → mahiro JSON 中的 extras 键名 */

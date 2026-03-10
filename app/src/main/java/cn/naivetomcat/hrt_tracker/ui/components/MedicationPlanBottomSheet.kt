@@ -59,6 +59,14 @@ fun MedicationPlanBottomSheet(
         mutableStateOf(planToEdit?.ester ?: Ester.EV)
     }
 
+    var selectedAntiAndrogen by remember(planToEdit, showBottomSheet) {
+        mutableStateOf(
+            planToEdit?.extras?.get(DoseEvent.ExtraKey.ANTI_ANDROGEN_TYPE)?.toInt()?.let {
+                AntiAndrogen.values().getOrElse(it) { AntiAndrogen.CPA }
+            } ?: AntiAndrogen.CPA
+        )
+    }
+
     var scheduleType by remember(planToEdit, showBottomSheet) {
         mutableStateOf(planToEdit?.scheduleType ?: MedicationPlan.ScheduleType.DAILY)
     }
@@ -154,12 +162,19 @@ fun MedicationPlanBottomSheet(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 药物类型选择
-                EsterSelectionSection(
-                    selectedEster = selectedEster,
-                    availableEsters = availableEsters,
-                    onEsterSelected = { selectedEster = it }
-                )
+                // 药物类型选择（雌激素）/ 抗雄药物类型选择（抗雄途径）
+                if (selectedRoute == Route.ANTIANDROGEN) {
+                    AntiAndrogenSelectionSection(
+                        selectedAntiAndrogen = selectedAntiAndrogen,
+                        onAntiAndrogenSelected = { selectedAntiAndrogen = it }
+                    )
+                } else {
+                    EsterSelectionSection(
+                        selectedEster = selectedEster,
+                        availableEsters = availableEsters,
+                        onEsterSelected = { selectedEster = it }
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -291,12 +306,15 @@ fun MedicationPlanBottomSheet(
                             if (selectedRoute == Route.SUBLINGUAL) {
                                 extras[DoseEvent.ExtraKey.SUBLINGUAL_TIER] = sublingualTier.ordinal.toDouble()
                             }
+                            if (selectedRoute == Route.ANTIANDROGEN) {
+                                extras[DoseEvent.ExtraKey.ANTI_ANDROGEN_TYPE] = selectedAntiAndrogen.ordinal.toDouble()
+                            }
                             
                             val plan = MedicationPlan(
                                 id = planToEdit?.id ?: UUID.randomUUID(),
                                 name = name,
                                 route = selectedRoute,
-                                ester = selectedEster,
+                                ester = if (selectedRoute == Route.ANTIANDROGEN) Ester.E2 else selectedEster,
                                 doseMG = doseMG,
                                 scheduleType = scheduleType,
                                 timeOfDay = timeOfDay,
@@ -765,6 +783,65 @@ private fun getAvailableEstersForRoute(route: Route): List<Ester> {
         Route.GEL -> listOf(Ester.E2)
         Route.PATCH_APPLY -> listOf(Ester.E2)
         Route.PATCH_REMOVE -> listOf(Ester.E2)
+        Route.ANTIANDROGEN -> listOf(Ester.E2) // 抗雄药物使用E2作为占位符
+    }
+}
+
+/**
+ * 抗雄药物类型选择组件
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun AntiAndrogenSelectionSection(
+    selectedAntiAndrogen: AntiAndrogen,
+    onAntiAndrogenSelected: (AntiAndrogen) -> Unit
+) {
+    Column {
+        Text(
+            text = stringResource(R.string.plan_sheet_antiandrogen_title),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        val antiAndrogens = AntiAndrogen.values()
+        ButtonGroup(modifier = Modifier.fillMaxWidth()) {
+            antiAndrogens.forEachIndexed { index, aa ->
+                val interactionSource = remember(aa) { MutableInteractionSource() }
+                ToggleButton(
+                    checked = selectedAntiAndrogen == aa,
+                    onCheckedChange = { onAntiAndrogenSelected(aa) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .animateWidth(interactionSource),
+                    interactionSource = interactionSource,
+                    shapes = when {
+                        index == 0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                        index == antiAndrogens.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                    }
+                ) {
+                    val aaText = aa.name
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Invisible anchor text forces Box to be exactly 2 lines tall
+                        Text(
+                            text = aaText,
+                            style = MaterialTheme.typography.bodySmall,
+                            minLines = 2,
+                            color = Color.Transparent
+                        )
+                        // Visible text is centered within the 2-line Box
+                        Text(
+                            text = aaText,
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

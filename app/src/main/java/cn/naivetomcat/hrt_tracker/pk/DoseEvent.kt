@@ -27,7 +27,8 @@ data class DoseEvent(
         AREA_CM2,                 // 涂抹面积（cm²）
         RELEASE_RATE_UG_PER_DAY, // 释放速率（µg/day），用于零级释放贴片
         SUBLINGUAL_THETA,         // 舌下直接吸收比例（0-1）
-        SUBLINGUAL_TIER           // 舌下档位代码（0-3）
+        SUBLINGUAL_TIER,          // 舌下档位代码（0-3）
+        ANTI_ANDROGEN_TYPE        // 抗雄药物类型（AntiAndrogen枚举的ordinal值）
     }
 
 }

@@ -178,11 +178,13 @@ class HRTViewModel(
 
                 val currentTimeH = System.currentTimeMillis() / 3600000.0
                 
-                // 获取历史用药事件
+                // 获取历史用药事件（过滤抗雄药物，不参与药代动力学计算）
                 val historicalEvents = repository.getEventsForSimulation(currentTimeH)
+                    .filter { it.route != Route.ANTIANDROGEN }
                 
-                // 获取启用的用药方案
+                // 获取启用的用药方案（过滤抗雄药物方案）
                 val enabledPlans = medicationPlanRepository.getEnabledPlans().first()
+                    .filter { it.route != Route.ANTIANDROGEN }
                 
                 // 根据用药方案生成未来15天的预测事件
                 val futureEvents = if (enabledPlans.isNotEmpty()) {

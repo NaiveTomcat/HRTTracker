@@ -1,5 +1,6 @@
 package cn.naivetomcat.hrt_tracker.data
 
+import cn.naivetomcat.hrt_tracker.pk.AntiAndrogen
 import cn.naivetomcat.hrt_tracker.pk.DoseEvent
 import cn.naivetomcat.hrt_tracker.pk.Ester
 import cn.naivetomcat.hrt_tracker.pk.Route
@@ -56,6 +57,7 @@ data class MedicationPlan(
             Route.GEL -> "凝胶"
             Route.PATCH_APPLY -> "贴片"
             Route.PATCH_REMOVE -> "移除贴片"
+            Route.ANTIANDROGEN -> "抗雄口服"
         }
 
         val scheduleStr = when (scheduleType) {
@@ -69,7 +71,21 @@ data class MedicationPlan(
 
         val timeStr = timeOfDay.joinToString("、") { it.toString() }
 
-        return "$scheduleStr $timeStr $routeStr ${doseMG}mg ${ester.displayName}"
+        val medicationStr = if (route == Route.ANTIANDROGEN) {
+            val aaType = extras[DoseEvent.ExtraKey.ANTI_ANDROGEN_TYPE]?.toInt()?.let {
+                AntiAndrogen.values().getOrElse(it) { AntiAndrogen.CPA }
+            } ?: AntiAndrogen.CPA
+            when (aaType) {
+                AntiAndrogen.CPA -> "醋酸环丙孕酮"
+                AntiAndrogen.MPA -> "醋酸甲羟孕酮"
+                AntiAndrogen.BICALUTAMIDE -> "比卡鲁胺"
+                AntiAndrogen.SPIRONOLACTONE -> "螺内酯"
+            }
+        } else {
+            ester.displayName
+        }
+
+        return "$scheduleStr $timeStr $routeStr ${doseMG}mg $medicationStr"
     }
 
     private fun dayName(day: DayOfWeek): String {

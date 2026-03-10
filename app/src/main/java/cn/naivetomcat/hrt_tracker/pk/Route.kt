@@ -9,5 +9,6 @@ enum class Route {
     SUBLINGUAL,    // 舌下
     GEL,           // 凝胶
     PATCH_APPLY,   // 应用贴片
-    PATCH_REMOVE   // 移除贴片
+    PATCH_REMOVE,  // 移除贴片
+    ANTIANDROGEN   // 抗雄激素药物（口服，不参与药代动力学计算）
 }

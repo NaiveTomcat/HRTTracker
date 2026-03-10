@@ -37,6 +37,18 @@ object ParameterResolver {
                 fFast = 0.0,
                 fSlow = 0.0
             )
+            // 抗雄药物不参与药代动力学计算，应在调用前过滤，这里仅作防御性处理
+            Route.ANTIANDROGEN -> PKParams(
+                fracFast = 0.0,
+                k1Fast = 0.0,
+                k1Slow = 0.0,
+                k2 = 0.0,
+                k3 = k3,
+                F = 0.0,
+                rateMGh = 0.0,
+                fFast = 0.0,
+                fSlow = 0.0
+            )
         }
     }
 
