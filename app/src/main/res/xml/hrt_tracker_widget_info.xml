@@ -10,7 +10,7 @@
     android:maxResizeWidth="2048dp"
     android:resizeMode="horizontal"
     android:configure="cn.naivetomcat.hrt_tracker.widget.HRTTrackerWidgetConfigActivity"
-    android:previewImage="@drawable/widget_hrt_tracker_preview"
+    android:previewLayout="@layout/widget_hrt_tracker_preview"
     android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen"
     android:widgetFeatures="reconfigurable|configuration_optional" />
