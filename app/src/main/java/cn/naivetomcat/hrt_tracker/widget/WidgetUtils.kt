@@ -1,8 +1,11 @@
 package cn.naivetomcat.hrt_tracker.widget
 
 import cn.naivetomcat.hrt_tracker.data.MedicationPlan
+import cn.naivetomcat.hrt_tracker.data.displayName
+import cn.naivetomcat.hrt_tracker.pk.AntiAndrogen
 import cn.naivetomcat.hrt_tracker.pk.DoseEvent
 import cn.naivetomcat.hrt_tracker.pk.Route
+import cn.naivetomcat.hrt_tracker.pk.displayName as antiAndrogenDisplayName
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -37,6 +40,21 @@ object WidgetUtils {
         Route.PATCH_APPLY -> "贴片"
         Route.PATCH_REMOVE -> "移除贴"
         Route.ANTIANDROGEN -> "抗雄"
+    }
+
+    /**
+     * 获取用药方案的药物显示名称。
+     * 抗雄药物返回抗雄类型名称，其他药物返回雌激素酯类名称。
+     */
+    fun MedicationPlan.drugDisplayName(): String {
+        return if (route == Route.ANTIANDROGEN) {
+            val aaType = extras[DoseEvent.ExtraKey.ANTI_ANDROGEN_TYPE]?.toInt()?.let {
+                AntiAndrogen.values().getOrElse(it) { AntiAndrogen.CPA }
+            } ?: AntiAndrogen.CPA
+            aaType.antiAndrogenDisplayName
+        } else {
+            ester.displayName
+        }
     }
 
     /**

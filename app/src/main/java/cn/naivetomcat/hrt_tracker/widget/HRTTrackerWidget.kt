@@ -55,12 +55,12 @@ import cn.naivetomcat.hrt_tracker.R
 import cn.naivetomcat.hrt_tracker.data.AppDatabase
 import cn.naivetomcat.hrt_tracker.data.DoseEventEntity
 import cn.naivetomcat.hrt_tracker.data.MedicationPlan
-import cn.naivetomcat.hrt_tracker.data.displayName
 import cn.naivetomcat.hrt_tracker.pk.DoseEvent
 import cn.naivetomcat.hrt_tracker.pk.Ester
 import cn.naivetomcat.hrt_tracker.pk.Route
 import cn.naivetomcat.hrt_tracker.widget.WidgetUtils.formatScheduledTime
 import cn.naivetomcat.hrt_tracker.widget.WidgetUtils.routeDisplayName
+import cn.naivetomcat.hrt_tracker.widget.WidgetUtils.drugDisplayName
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.LocalTime
@@ -374,7 +374,7 @@ private fun ReminderRowContent(
                         maxLines = 1
                     )
                     Text(
-                        text = "${plan.doseMG}mg · ${plan.ester.displayName} · ${routeDisplayName(plan.route)}",
+                        text = "${plan.doseMG}mg · ${plan.drugDisplayName()} · ${routeDisplayName(plan.route)}",
                         style = TextStyle(
                             color = GlanceTheme.colors.onTertiaryContainer,
                             fontSize = 10.sp
@@ -435,7 +435,7 @@ private fun QuickAddRowContent(
                 modifier = GlanceModifier.defaultWeight().wrapContentHeight()
             ) {
                 Text(
-                    text = plan.ester.displayName,
+                    text = plan.drugDisplayName(),
                     style = TextStyle(
                         color = GlanceTheme.colors.onSurface,
                         fontSize = 12.sp,
@@ -485,7 +485,7 @@ private fun WideConfirmingRow(plan: MedicationPlan, isAdding: Boolean) {
                 maxLines = 1
             )
             Text(
-                text = "${plan.ester.displayName} · ${routeDisplayName(plan.route)} · ${plan.doseMG}mg",
+                text = "${plan.drugDisplayName()} · ${routeDisplayName(plan.route)} · ${plan.doseMG}mg",
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 10.sp
