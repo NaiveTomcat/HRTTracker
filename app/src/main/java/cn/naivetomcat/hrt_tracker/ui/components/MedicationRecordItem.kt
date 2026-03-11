@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,11 +49,30 @@ fun MedicationRecordItem(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null
 ) {
-    val containerColor = if (isAntiAndrogen) {
-        MaterialTheme.colorScheme.secondaryFixedDim
+    val listItemColors = if (isAntiAndrogen) {
+        ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            leadingIconColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            headlineColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            overlineColor = MaterialTheme.colorScheme.onTertiaryFixedVariant,
+        )
     } else {
-        MaterialTheme.colorScheme.secondaryContainer
+        ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            leadingIconColor = MaterialTheme.colorScheme.tertiary,
+        )
     }
+    val trailingPrimaryColor = if (isAntiAndrogen) {
+        MaterialTheme.colorScheme.onTertiaryFixed
+    } else {
+        Color.Unspecified
+    }
+    val trailingSecondaryColor = if (isAntiAndrogen) {
+        MaterialTheme.colorScheme.onTertiaryFixedVariant
+    } else {
+        Color.Unspecified
+    }
+
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
@@ -61,10 +81,7 @@ fun MedicationRecordItem(
         onClick = onClick ?: {}
     ) {
         ListItem(
-            colors = ListItemDefaults.colors(
-                containerColor = containerColor,
-                leadingIconColor = MaterialTheme.colorScheme.tertiary,
-            ),
+            colors = listItemColors,
             overlineContent = {
                 Text(
                     text = getRouteDisplayName(route),
@@ -93,11 +110,13 @@ fun MedicationRecordItem(
                     Text(
                         text = formatTime(timeH, is24Hour),
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        color = trailingPrimaryColor
                     )
                     Text(
                         text = formatDate(timeH),
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        color = trailingSecondaryColor
                     )
                 }
             }
