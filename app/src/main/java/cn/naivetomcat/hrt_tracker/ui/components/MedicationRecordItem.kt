@@ -49,7 +49,7 @@ fun MedicationRecordItem(
     onClick: (() -> Unit)? = null
 ) {
     val containerColor = if (isAntiAndrogen) {
-        MaterialTheme.colorScheme.tertiaryContainer
+        MaterialTheme.colorScheme.secondaryFixedDim
     } else {
         MaterialTheme.colorScheme.secondaryContainer
     }
