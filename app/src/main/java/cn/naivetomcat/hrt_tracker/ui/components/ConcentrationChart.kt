@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.IntOffset
@@ -36,6 +37,30 @@ import kotlin.math.abs
 import kotlin.math.sqrt
 import androidx.compose.ui.platform.LocalLocale
 
+private const val MAX_X_AXIS_LABEL_COUNT = 6
+
+/**
+ * Returns the number of X-axis labels that fit without overlapping.
+ *
+ * Keeping this calculation independent from Compose drawing makes the narrow-screen
+ * behavior deterministic and easy to cover with unit tests.
+ */
+internal fun calculateXAxisLabelCount(
+    chartWidthPx: Float,
+    labelWidthPx: Float,
+    minimumGapPx: Float
+): Int {
+    if (!chartWidthPx.isFinite() || !labelWidthPx.isFinite() || !minimumGapPx.isFinite() ||
+        chartWidthPx <= 0f || labelWidthPx < 0f || minimumGapPx < 0f
+    ) {
+        return 2
+    }
+
+    val slotWidth = (labelWidthPx + minimumGapPx).coerceAtLeast(1f)
+    return (chartWidthPx / slotWidth)
+        .toInt()
+        .coerceIn(2, MAX_X_AXIS_LABEL_COUNT)
+}
 
 /**
  * 雌二醇浓度图表组件
@@ -543,27 +568,48 @@ fun ConcentrationChart(
         // 计算可见时间范围
         val visibleTimeStart = timeMin - (offsetX / (chartWidth * scaleX)) * (timeMax - timeMin)
         val visibleTimeEnd = visibleTimeStart + (timeMax - timeMin) / scaleX
-        
-        for (i in 0..5) {
-            val timeValue = visibleTimeStart + (visibleTimeEnd - visibleTimeStart) * i / 5
+
+        fun formatXAxisLabel(timeH: Double): String {
+            val timeMillis = (timeH * 3600000).toLong()
+            return dateFormat.format(Date(timeMillis)).replaceFirst(" ", "\n")
+        }
+
+        val xAxisTextStyle = TextStyle(
+            color = onSurfaceColor,
+            fontSize = 10.sp,
+            textAlign = TextAlign.Center
+        )
+        val widestEdgeLabel = listOf(visibleTimeStart, visibleTimeEnd)
+            .map { time ->
+                textMeasurer.measure(
+                    text = formatXAxisLabel(time),
+                    style = xAxisTextStyle
+                )
+            }
+            .maxBy { it.size.width }
+        val xAxisLabelCount = calculateXAxisLabelCount(
+            chartWidthPx = chartWidth,
+            labelWidthPx = widestEdgeLabel.size.width.toFloat(),
+            minimumGapPx = 12.dp.toPx()
+        )
+
+        for (i in 0 until xAxisLabelCount) {
+            val fraction = i.toDouble() / (xAxisLabelCount - 1)
+            val timeValue = visibleTimeStart + (visibleTimeEnd - visibleTimeStart) * fraction
             // 从时间值计算屏幕坐标
             val normalizedPos = ((timeValue - timeMin) / (timeMax - timeMin)).toFloat()
             val x = chartLeft + normalizedPos * chartWidth * scaleX + offsetX
             
             if (x >= chartLeft && x <= chartRight) {
-                val timeMillis = (timeValue * 3600000).toLong()
-                val text = dateFormat.format(Date(timeMillis))
                 val textLayoutResult = textMeasurer.measure(
-                    text = text,
-                    style = TextStyle(
-                        color = onSurfaceColor,
-                        fontSize = 10.sp
-                    )
+                    text = formatXAxisLabel(timeValue),
+                    style = xAxisTextStyle
                 )
+                val maxLabelLeft = (size.width - textLayoutResult.size.width).coerceAtLeast(0f)
                 drawText(
                     textLayoutResult = textLayoutResult,
                     topLeft = Offset(
-                        x - textLayoutResult.size.width / 2,
+                        (x - textLayoutResult.size.width / 2).coerceIn(0f, maxLabelLeft),
                         chartBottom + 8.dp.toPx()
                     )
                 )
@@ -618,4 +664,3 @@ fun ConcentrationChart(
         }
     }
 }
-

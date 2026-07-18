@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
@@ -14,10 +15,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cn.naivetomcat.hrt_tracker.R
 import cn.naivetomcat.hrt_tracker.data.MedicationPlan
 import cn.naivetomcat.hrt_tracker.pk.SimulationResult
@@ -261,30 +265,75 @@ private fun CurrentConcentrationCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            val concentrationText = if (concentration != null) {
+                "%.1f pg/mL".format(concentration)
+            } else {
+                stringResource(R.string.home_concentration_placeholder)
+            }
+            val levelText = getConcentrationLevelText(tempPkState.getConcentrationLevelColor())
+
             Text(
                 text = stringResource(R.string.home_current_concentration),
                 style = MaterialTheme.typography.titleMedium
             )
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = if (concentration != null) {
-                        "%.1f pg/mL".format(concentration)
-                    } else {
-                        stringResource(R.string.home_concentration_placeholder)
-                    },
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                Text(
-                    text = getConcentrationLevelText(tempPkState.getConcentrationLevelColor()),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium
-                )
+
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val useStackedLayout =
+                    maxWidth < 400.dp || LocalDensity.current.fontScale > 1.2f
+
+                if (useStackedLayout) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = concentrationText,
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.displayMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false,
+                            autoSize = TextAutoSize.StepBased(
+                                minFontSize = 28.sp,
+                                maxFontSize = MaterialTheme.typography.displayMedium.fontSize,
+                                stepSize = 1.sp
+                            )
+                        )
+                        Text(
+                            text = levelText,
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 2
+                        )
+                    }
+                } else {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.Bottom,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = concentrationText,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.displayMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false,
+                            autoSize = TextAutoSize.StepBased(
+                                minFontSize = 28.sp,
+                                maxFontSize = MaterialTheme.typography.displayMedium.fontSize,
+                                stepSize = 1.sp
+                            )
+                        )
+
+                        Text(
+                            text = levelText,
+                            modifier = Modifier.widthIn(max = 220.dp),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.End,
+                            maxLines = 2
+                        )
+                    }
+                }
             }
         }
     }
@@ -502,6 +551,22 @@ private fun ConcentrationLevelItem(
 // ============================================================================
 // Previews
 // ============================================================================
+
+@Preview(
+    name = "窄屏大字体浓度卡片",
+    widthDp = 320,
+    fontScale = 1.3f,
+    showBackground = true
+)
+@Composable
+private fun PreviewCurrentConcentrationCardNarrow() {
+    HRTTrackerTheme {
+        CurrentConcentrationCard(
+            concentration = 147.4,
+            pkState = PKState(currentConcentration = 147.4)
+        )
+    }
+}
 
 @Preview(name = "空状态", showBackground = true, showSystemUi = true)
 @Composable
