@@ -12,6 +12,7 @@ import androidx.collection.intSetOf
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -106,7 +107,9 @@ class MainActivity : ComponentActivity() {
                 )
                 
                 // 应用启动时重新设置所有提醒
-                medicationPlanViewModel.rescheduleAllReminders()
+                LaunchedEffect(medicationPlanViewModel) {
+                    medicationPlanViewModel.rescheduleAllReminders()
+                }
                 
                 // 使用导航
                 AppNavigation(

@@ -118,6 +118,13 @@
     <string name="plans_title">用药方案</string>
     <string name="plans_add_content_desc">添加用药方案</string>
     <string name="plans_empty">暂无用药方案</string>
+    <string name="plans_notification_permission_title">启用用药提醒</string>
+    <string name="plans_notification_permission_desc">允许应用在计划时间发送系统通知</string>
+    <string name="plans_promoted_notification_title">启用焦点通知</string>
+    <string name="plans_promoted_notification_desc">在支持的 Android 16 设备上突出显示正在等待处理的用药提醒</string>
+    <string name="notification_medication_title">用药提醒：%1$s</string>
+    <string name="notification_confirm_dose">确认用药</string>
+    <string name="notification_skip_dose">跳过本次</string>
 
     <string name="route_injection">肌肉注射</string>
     <string name="route_oral">口服</string>

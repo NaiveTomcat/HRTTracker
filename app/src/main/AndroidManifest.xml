@@ -4,6 +4,10 @@
 
     <!-- 通知权限（Android 13+） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission
+        android:name="android.permission.POST_PROMOTED_NOTIFICATIONS"
+        tools:targetApi="36" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- 网络访问权限（用于检查更新） -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -40,6 +44,23 @@
             android:name=".reminder.MedicationReminderReceiver"
             android:enabled="true"
             android:exported="false" />
+
+        <receiver
+            android:name=".reminder.MedicationNotificationActionReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <receiver
+            android:name=".reminder.ReminderRescheduleReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
 
         <!-- HRT Tracker 组合微件（用药提醒 + 快速添加） -->
         <receiver
