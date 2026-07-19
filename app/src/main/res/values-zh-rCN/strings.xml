@@ -99,6 +99,7 @@
     <string name="home_level_target">非针剂女性向 GAHT 目标</string>
     <string name="home_level_high">高于参考范围</string>
     <string name="home_curve_guide">曲线说明</string>
+    <string name="home_curve_dose_record">星形：实际给药记录</string>
     <string name="home_curve_history">历史数据和早期预测（到第一次计划用药）</string>
     <string name="home_curve_no_plan">无计划预测（50%透明，不按方案沿自然衰减）</string>
     <string name="home_curve_with_plan">按计划预测（50%透明，未来第一次计划用药后）</string>
