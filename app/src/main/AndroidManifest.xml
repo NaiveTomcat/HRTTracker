@@ -62,6 +62,25 @@
             </intent-filter>
         </receiver>
 
+        <service
+            android:name=".wear.WearDoseListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data
+                    android:scheme="wear"
+                    android:host="*"
+                    android:pathPrefix="/hrt/dose-actions" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:scheme="wear"
+                    android:host="*"
+                    android:path="/hrt/request-plans" />
+            </intent-filter>
+        </service>
+
         <!-- HRT Tracker 组合微件（用药提醒 + 快速添加） -->
         <receiver
             android:name=".widget.HRTTrackerWidgetReceiver"
@@ -75,15 +94,6 @@
                 android:resource="@xml/hrt_tracker_widget_info" />
         </receiver>
 
-        <!-- 微件配置 Activity -->
-        <activity
-            android:name=".widget.HRTTrackerWidgetConfigActivity"
-            android:exported="true"
-            android:theme="@style/Theme.HRTTracker">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
     </application>
 
 </manifest>

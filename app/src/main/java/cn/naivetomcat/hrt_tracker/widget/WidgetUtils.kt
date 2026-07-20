@@ -6,6 +6,7 @@ import cn.naivetomcat.hrt_tracker.pk.AntiAndrogen
 import cn.naivetomcat.hrt_tracker.pk.DoseEvent
 import cn.naivetomcat.hrt_tracker.pk.Route
 import cn.naivetomcat.hrt_tracker.pk.displayName as antiAndrogenDisplayName
+import cn.naivetomcat.hrt_tracker.reminder.matchesPlanDose
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -130,8 +131,7 @@ object WidgetUtils {
         fun isTakenAt(time: LocalDateTime): Boolean {
             val h = localDateTimeToHours(time)
             return recentActualEvents.any { actual ->
-                actual.route == plan.route &&
-                    actual.ester == plan.ester &&
+                actual.matchesPlanDose(plan) &&
                     abs(actual.timeH - h) <= TAKEN_WINDOW_HOURS
             }
         }
@@ -147,8 +147,7 @@ object WidgetUtils {
          */
         fun isTakenBetween(fromH: Double, toExclusiveH: Double): Boolean {
             return recentActualEvents.any { actual ->
-                actual.route == plan.route &&
-                    actual.ester == plan.ester &&
+                actual.matchesPlanDose(plan) &&
                     actual.timeH >= fromH - TAKEN_WINDOW_HOURS &&
                     actual.timeH < toExclusiveH
             }

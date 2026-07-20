@@ -119,7 +119,7 @@
     <string name="plans_add_content_desc">添加用药方案</string>
     <string name="plans_empty">暂无用药方案</string>
     <string name="plans_notification_permission_title">启用用药提醒</string>
-    <string name="plans_notification_permission_desc">允许应用在计划时间发送系统通知</string>
+    <string name="plans_notification_permission_desc">计划时间前后 1 小时内未记录同一方案时发送系统通知</string>
     <string name="plans_promoted_notification_title">启用焦点通知</string>
     <string name="plans_promoted_notification_desc">在支持的 Android 16 设备上突出显示正在等待处理的用药提醒</string>
     <string name="notification_medication_title">用药提醒：%1$s</string>
@@ -211,5 +211,5 @@
 
     <!-- Widget strings -->
     <string name="widget_combined_label">HRT 用药微件</string>
-    <string name="widget_combined_desc">显示用药提醒并快速添加用药记录</string>
+    <string name="widget_combined_desc">显示当前血药浓度，并通过两个方案按钮快速记录用药</string>
 </resources>

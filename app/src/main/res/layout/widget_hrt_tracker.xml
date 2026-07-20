@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:id="@+id/widget_concentration_panel"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="@drawable/widget_panel"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:text="当前浓度"
+            android:textColor="#FFE5E7FF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_concentration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:text="--"
+            android:textColor="#FFFFFFFF"
+            android:textSize="27sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:text="pg/mL"
+            android:textColor="#FFE5E7FF"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/widget_target_range"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:maxLines="1"
+            android:text="目标 100–200"
+            android:textColor="#FFC5CAFF"
+            android:textSize="10sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="8dp"
+        android:layout_height="1dp"
+        android:text="" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_record_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:maxLines="1"
+            android:text="记录用药"
+            android:textColor="#FFF1F1F7"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/widget_plan_one"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/widget_button"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="2"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:padding="4dp"
+            android:text="方案一"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFFFF"
+            android:textSize="11sp" />
+
+        <TextView
+            android:layout_width="1dp"
+            android:layout_height="6dp"
+            android:text="" />
+
+        <Button
+            android:id="@+id/widget_plan_two"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/widget_button"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="2"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:padding="4dp"
+            android:text="方案二"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFFFF"
+            android:textSize="11sp" />
+    </LinearLayout>
+</LinearLayout>

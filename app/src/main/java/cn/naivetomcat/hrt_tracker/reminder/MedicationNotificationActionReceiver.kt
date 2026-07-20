@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import cn.naivetomcat.hrt_tracker.data.AppDatabase
 import cn.naivetomcat.hrt_tracker.data.DoseEventEntity
+import cn.naivetomcat.hrt_tracker.widget.updateAllHRTTrackerWidgets
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -63,6 +64,7 @@ class MedicationNotificationActionReceiver : BroadcastReceiver() {
                     database.doseEventDao().upsertEvent(
                         DoseEventEntity.fromDoseEvent(event)
                     )
+                    updateAllHRTTrackerWidgets(context)
                 }
 
                 // A deleted plan is also a stale reminder, so dismiss it.

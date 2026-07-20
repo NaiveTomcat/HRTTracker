@@ -24,4 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "HRT Tracker"
 include(":app")
- 
+include(":wear")

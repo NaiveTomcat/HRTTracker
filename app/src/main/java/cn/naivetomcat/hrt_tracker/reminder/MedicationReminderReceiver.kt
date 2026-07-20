@@ -26,35 +26,41 @@ class MedicationReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val planId = intent.getStringExtra(EXTRA_PLAN_ID) ?: return
-        val planName = intent.getStringExtra(EXTRA_PLAN_NAME) ?: "用药提醒"
-        val planDescription = intent.getStringExtra(EXTRA_PLAN_DESCRIPTION) ?: ""
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, 0)
         val scheduledAtMillis = intent.getLongExtra(
             EXTRA_SCHEDULED_AT_MILLIS,
             System.currentTimeMillis()
         )
-
-        // 发送通知
-        val notificationHelper = NotificationHelper(context)
-        notificationHelper.sendMedicationReminder(
-            planId = planId,
-            planName = planName,
-            description = planDescription,
-            notificationId = notificationId,
-            scheduledAtMillis = scheduledAtMillis
-        )
-
-        // Keep long-running plans alive beyond the pre-scheduled window. Each
-        // delivered occurrence refreshes the next batch from the current plan.
         val planUuid = runCatching { UUID.fromString(planId) }.getOrNull() ?: return
         val pendingResult = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                val plan = AppDatabase.getDatabase(context)
-                    .medicationPlanDao()
+                val database = AppDatabase.getDatabase(context)
+                val plan = database.medicationPlanDao()
                     .getPlanById(planUuid)
                     ?.toMedicationPlan()
+
                 if (plan?.isEnabled == true) {
+                    val scheduledTimeH = scheduledAtMillis / 3_600_000.0
+                    val checkIns = database.doseEventDao()
+                        .getEventsByTimeRange(
+                            scheduledTimeH - DOSE_CHECK_IN_WINDOW_HOURS,
+                            scheduledTimeH + DOSE_CHECK_IN_WINDOW_HOURS
+                        )
+                        .map { it.toDoseEvent() }
+
+                    if (!hasPlanDoseCheckIn(plan, checkIns, scheduledAtMillis)) {
+                        NotificationHelper(context).sendMedicationReminder(
+                            planId = planId,
+                            planName = plan.name,
+                            description = plan.getDescription(),
+                            notificationId = notificationId,
+                            scheduledAtMillis = scheduledAtMillis
+                        )
+                    }
+
+                    // Keep long-running plans alive beyond the pre-scheduled
+                    // window by refreshing the next batch after delivery.
                     ReminderManager(context).scheduleReminder(plan)
                 }
             } finally {
