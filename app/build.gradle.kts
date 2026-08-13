@@ -108,8 +108,7 @@ dependencies {
     // DataStore
     implementation(libs.androidx.datastore.preferences)
 
-    // Glance (home screen widgets)
-    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.play.services.wearable)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

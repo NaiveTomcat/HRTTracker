@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">HRT Tracker</string>
+    <string name="tile_label">HRT 用药记录</string>
+    <string name="tile_description">从手表快速记录手机端的用药方案</string>
+</resources>

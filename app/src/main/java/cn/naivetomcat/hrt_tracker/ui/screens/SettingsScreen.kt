@@ -369,6 +369,19 @@ private fun BodyWeightSection(
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
+private fun stableSegmentedShapes(index: Int, count: Int): ListItemShapes {
+    val shapes = ListItemDefaults.segmentedShapes(index = index, count = count)
+    return shapes.copy(
+        selectedShape = shapes.shape,
+        pressedShape = shapes.shape,
+        focusedShape = shapes.shape,
+        hoveredShape = shapes.shape,
+        draggedShape = shapes.shape
+    )
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
 private fun ThemeModeSection(
     currentMode: ThemeMode,
     onModeChange: (ThemeMode) -> Unit
@@ -407,7 +420,7 @@ private fun ThemeModeSection(
                 SegmentedListItem(
                     selected = currentMode == mode,
                     onClick = { onModeChange(mode) },
-                    shapes = ListItemDefaults.segmentedShapes(
+                    shapes = stableSegmentedShapes(
                         index = index,
                         count = ThemeMode.entries.size
                     ),
@@ -477,7 +490,7 @@ private fun ColorThemeSection(
                 SegmentedListItem(
                     selected = currentTheme == theme,
                     onClick = { onThemeChange(theme) },
-                    shapes = ListItemDefaults.segmentedShapes(
+                    shapes = stableSegmentedShapes(
                         index = index,
                         count = ColorTheme.entries.size
                     ),
@@ -549,7 +562,7 @@ private fun TimeFormatSection(
                 SegmentedListItem(
                     selected = currentFormat == format,
                     onClick = { onFormatChange(format) },
-                    shapes = ListItemDefaults.segmentedShapes(
+                    shapes = stableSegmentedShapes(
                         index = index,
                         count = TimeFormat.entries.size
                     ),

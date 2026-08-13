@@ -9,6 +9,7 @@ import cn.naivetomcat.hrt_tracker.data.MedicationPlanRepository
 import cn.naivetomcat.hrt_tracker.reminder.ReminderManager
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -99,7 +100,7 @@ class MedicationPlanViewModel(
      */
     fun rescheduleAllReminders() {
         viewModelScope.launch {
-            val allPlans = plans.value
+            val allPlans = repository.getAllPlans().first()
             reminderManager.rescheduleAllReminders(allPlans)
         }
     }

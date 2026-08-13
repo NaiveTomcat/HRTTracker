@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -25,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.IntOffset
@@ -33,9 +35,55 @@ import cn.naivetomcat.hrt_tracker.pk.SimulationResult
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.abs
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
 import androidx.compose.ui.platform.LocalLocale
 
+private const val MAX_X_AXIS_LABEL_COUNT = 6
+private const val GAHT_TARGET_MIN_PG_ML = 100.0
+private const val GAHT_TARGET_MAX_PG_ML = 200.0
+
+/**
+ * Returns the number of X-axis labels that fit without overlapping.
+ *
+ * Keeping this calculation independent from Compose drawing makes the narrow-screen
+ * behavior deterministic and easy to cover with unit tests.
+ */
+internal fun calculateXAxisLabelCount(
+    chartWidthPx: Float,
+    labelWidthPx: Float,
+    minimumGapPx: Float
+): Int {
+    if (!chartWidthPx.isFinite() || !labelWidthPx.isFinite() || !minimumGapPx.isFinite() ||
+        chartWidthPx <= 0f || labelWidthPx < 0f || minimumGapPx < 0f
+    ) {
+        return 2
+    }
+
+    val slotWidth = (labelWidthPx + minimumGapPx).coerceAtLeast(1f)
+    return (chartWidthPx / slotWidth)
+        .toInt()
+        .coerceIn(2, MAX_X_AXIS_LABEL_COUNT)
+}
+
+private fun createStarPath(
+    center: Offset,
+    outerRadius: Float,
+    innerRadius: Float
+): Path = Path().apply {
+    repeat(10) { index ->
+        val radius = if (index % 2 == 0) outerRadius else innerRadius
+        val angle = -PI / 2.0 + index * PI / 5.0
+        val point = Offset(
+            x = center.x + (cos(angle) * radius).toFloat(),
+            y = center.y + (sin(angle) * radius).toFloat()
+        )
+        if (index == 0) moveTo(point.x, point.y) else lineTo(point.x, point.y)
+    }
+    close()
+}
 
 /**
  * 雌二醇浓度图表组件
@@ -114,7 +162,10 @@ fun ConcentrationChart(
     }
 
     // Y轴刻度使用25的倍数
-    val rawConcMax = (simulationResult.concPGmL.maxOrNull() ?: 100.0) * 1.1
+    val rawConcMax = maxOf(
+        simulationResult.concPGmL.maxOrNull() ?: 100.0,
+        GAHT_TARGET_MAX_PG_ML
+    ) * 1.1
     val concMin = 0.0
     val concMax = kotlin.math.ceil(rawConcMax / 25.0) * 25.0
 
@@ -259,6 +310,29 @@ fun ConcentrationChart(
             right = chartRight,
             bottom = chartBottom
         ) {
+            val targetBandTop = chartBottom -
+                chartHeight * ((GAHT_TARGET_MAX_PG_ML - concMin) / (concMax - concMin)).toFloat()
+            val targetBandBottom = chartBottom -
+                chartHeight * ((GAHT_TARGET_MIN_PG_ML - concMin) / (concMax - concMin)).toFloat()
+
+            drawRect(
+                color = primaryColor.copy(alpha = 0.12f),
+                topLeft = Offset(chartLeft, targetBandTop),
+                size = Size(chartWidth, targetBandBottom - targetBandTop)
+            )
+            drawLine(
+                color = primaryColor.copy(alpha = 0.38f),
+                start = Offset(chartLeft, targetBandTop),
+                end = Offset(chartRight, targetBandTop),
+                strokeWidth = 1.dp.toPx()
+            )
+            drawLine(
+                color = primaryColor.copy(alpha = 0.38f),
+                start = Offset(chartLeft, targetBandBottom),
+                end = Offset(chartRight, targetBandBottom),
+                strokeWidth = 1.dp.toPx()
+            )
+
             // 确定分叉点时间（优先使用传入的 forkPointTimeH，否则使用当前时刻）
             val forkTime = forkPointTimeH ?: currentTimeH
             
@@ -398,17 +472,31 @@ fun ConcentrationChart(
                 )
             )
 
-            // 标记给药时间点（应用缩放和平移）
+            // 在曲线上用星形标记实际给药记录。
             doseTimePoints.forEach { doseTime ->
                 if (doseTime >= timeMin && doseTime <= timeMax) {
                     val normalizedTime = ((doseTime - timeMin) / (timeMax - timeMin)).toFloat()
                     val x = chartLeft + normalizedTime * chartWidth * scaleX + offsetX
-                    if (x >= chartLeft && x <= chartRight) {
-                        drawLine(
-                            color = errorColor.copy(alpha = 0.5f),
-                            start = Offset(x, chartTop),
-                            end = Offset(x, chartBottom),
-                            strokeWidth = 2.5.dp.toPx()
+                    val concentration = simulationResult.concentration(doseTime)
+                    if (x >= chartLeft && x <= chartRight && concentration != null) {
+                        val y = chartBottom -
+                            chartHeight * ((concentration - concMin) / (concMax - concMin)).toFloat()
+                        val starPath = createStarPath(
+                            center = Offset(x, y),
+                            outerRadius = 8.dp.toPx(),
+                            innerRadius = 3.6.dp.toPx()
+                        )
+                        drawPath(
+                            path = starPath,
+                            color = errorColor.copy(alpha = 0.95f)
+                        )
+                        drawPath(
+                            path = starPath,
+                            color = surfaceColor,
+                            style = Stroke(
+                                width = 1.5.dp.toPx(),
+                                join = StrokeJoin.Round
+                            )
                         )
                     }
                 }
@@ -543,27 +631,48 @@ fun ConcentrationChart(
         // 计算可见时间范围
         val visibleTimeStart = timeMin - (offsetX / (chartWidth * scaleX)) * (timeMax - timeMin)
         val visibleTimeEnd = visibleTimeStart + (timeMax - timeMin) / scaleX
-        
-        for (i in 0..5) {
-            val timeValue = visibleTimeStart + (visibleTimeEnd - visibleTimeStart) * i / 5
+
+        fun formatXAxisLabel(timeH: Double): String {
+            val timeMillis = (timeH * 3600000).toLong()
+            return dateFormat.format(Date(timeMillis)).replaceFirst(" ", "\n")
+        }
+
+        val xAxisTextStyle = TextStyle(
+            color = onSurfaceColor,
+            fontSize = 10.sp,
+            textAlign = TextAlign.Center
+        )
+        val widestEdgeLabel = listOf(visibleTimeStart, visibleTimeEnd)
+            .map { time ->
+                textMeasurer.measure(
+                    text = formatXAxisLabel(time),
+                    style = xAxisTextStyle
+                )
+            }
+            .maxBy { it.size.width }
+        val xAxisLabelCount = calculateXAxisLabelCount(
+            chartWidthPx = chartWidth,
+            labelWidthPx = widestEdgeLabel.size.width.toFloat(),
+            minimumGapPx = 12.dp.toPx()
+        )
+
+        for (i in 0 until xAxisLabelCount) {
+            val fraction = i.toDouble() / (xAxisLabelCount - 1)
+            val timeValue = visibleTimeStart + (visibleTimeEnd - visibleTimeStart) * fraction
             // 从时间值计算屏幕坐标
             val normalizedPos = ((timeValue - timeMin) / (timeMax - timeMin)).toFloat()
             val x = chartLeft + normalizedPos * chartWidth * scaleX + offsetX
             
             if (x >= chartLeft && x <= chartRight) {
-                val timeMillis = (timeValue * 3600000).toLong()
-                val text = dateFormat.format(Date(timeMillis))
                 val textLayoutResult = textMeasurer.measure(
-                    text = text,
-                    style = TextStyle(
-                        color = onSurfaceColor,
-                        fontSize = 10.sp
-                    )
+                    text = formatXAxisLabel(timeValue),
+                    style = xAxisTextStyle
                 )
+                val maxLabelLeft = (size.width - textLayoutResult.size.width).coerceAtLeast(0f)
                 drawText(
                     textLayoutResult = textLayoutResult,
                     topLeft = Offset(
-                        x - textLayoutResult.size.width / 2,
+                        (x - textLayoutResult.size.width / 2).coerceIn(0f, maxLabelLeft),
                         chartBottom + 8.dp.toPx()
                     )
                 )
@@ -618,4 +727,3 @@ fun ConcentrationChart(
         }
     }
 }
-

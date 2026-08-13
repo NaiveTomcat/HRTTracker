@@ -21,6 +21,11 @@ class ReminderManager(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
+    private companion object {
+        const val MAX_PLAN_TIME_POINTS = 10
+        const val SCHEDULED_OCCURRENCES_PER_TIME = 30
+    }
+
     /**
      * 为用药方案设置提醒
      */
@@ -29,12 +34,16 @@ class ReminderManager(private val context: Context) {
             return
         }
 
+        // Editing a plan can remove or move times. Clear old PendingIntents first
+        // so stale alarms from the previous definition cannot fire.
+        cancelReminder(plan.id)
+
         // 为每个时间点设置提醒
         plan.timeOfDay.forEachIndexed { index, time ->
             val nextReminderTimes = calculateNextReminderTimes(plan, time)
             
-            // 设置接下来7天的提醒
-            nextReminderTimes.take(7).forEachIndexed { dayIndex, dateTime ->
+            nextReminderTimes.take(SCHEDULED_OCCURRENCES_PER_TIME)
+                .forEachIndexed { dayIndex, dateTime ->
                 scheduleAlarm(plan, dateTime, index * 1000 + dayIndex)
             }
         }
@@ -44,9 +53,8 @@ class ReminderManager(private val context: Context) {
      * 取消用药方案的所有提醒
      */
     fun cancelReminder(planId: UUID) {
-        // 取消接下来7天的所有可能的提醒（最多支持10个时间点）
-        for (timeIndex in 0 until 10) {
-            for (dayIndex in 0 until 7) {
+        for (timeIndex in 0 until MAX_PLAN_TIME_POINTS) {
+            for (dayIndex in 0 until SCHEDULED_OCCURRENCES_PER_TIME) {
                 val requestCode = planId.hashCode() + timeIndex * 1000 + dayIndex
                 val intent = Intent(context, MedicationReminderReceiver::class.java)
                 val pendingIntent = PendingIntent.getBroadcast(
@@ -78,7 +86,11 @@ class ReminderManager(private val context: Context) {
      * 设置单次提醒
      */
     private fun scheduleAlarm(plan: MedicationPlan, dateTime: LocalDateTime, timeIndex: Int) {
-        val triggerTime = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val scheduledAtMillis =
+            dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        // Wait until the end of the ±1 hour check-in window before deciding
+        // whether a reminder is still needed.
+        val triggerTime = reminderEvaluationTimeMillis(scheduledAtMillis)
         
         // 如果时间已经过去，不设置提醒
         if (triggerTime < System.currentTimeMillis()) {
@@ -90,6 +102,7 @@ class ReminderManager(private val context: Context) {
             putExtra(MedicationReminderReceiver.EXTRA_PLAN_NAME, plan.name)
             putExtra(MedicationReminderReceiver.EXTRA_PLAN_DESCRIPTION, plan.getDescription())
             putExtra(MedicationReminderReceiver.EXTRA_NOTIFICATION_ID, plan.id.hashCode() + timeIndex)
+            putExtra(MedicationReminderReceiver.EXTRA_SCHEDULED_AT_MILLIS, scheduledAtMillis)
         }
 
         val requestCode = plan.id.hashCode() + timeIndex
@@ -141,7 +154,7 @@ class ReminderManager(private val context: Context) {
                     val reminderDate = today.plusDays(i.toLong())
                     val reminderTime = LocalDateTime.of(reminderDate, time)
                     
-                    if (reminderTime.isAfter(now)) {
+                    if (reminderTime.plusHours(1).isAfter(now)) {
                         reminderTimes.add(reminderTime)
                     }
                 }
@@ -156,7 +169,7 @@ class ReminderManager(private val context: Context) {
                     if (plan.daysOfWeek.contains(dayOfWeek)) {
                         val reminderTime = LocalDateTime.of(reminderDate, time)
                         
-                        if (reminderTime.isAfter(now)) {
+                        if (reminderTime.plusHours(1).isAfter(now)) {
                             reminderTimes.add(reminderTime)
                         }
                     }
@@ -170,7 +183,7 @@ class ReminderManager(private val context: Context) {
                     val reminderDate = today.plusDays(dayOffset.toLong())
                     val reminderTime = LocalDateTime.of(reminderDate, time)
                     
-                    if (reminderTime.isAfter(now)) {
+                    if (reminderTime.plusHours(1).isAfter(now)) {
                         reminderTimes.add(reminderTime)
                     }
                     

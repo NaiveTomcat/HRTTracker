@@ -1,19 +1,31 @@
 package cn.naivetomcat.hrt_tracker.ui.screens
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import cn.naivetomcat.hrt_tracker.R
 import cn.naivetomcat.hrt_tracker.data.MedicationPlan
 import cn.naivetomcat.hrt_tracker.pk.Ester
@@ -36,9 +48,59 @@ fun MedicationPlansScreen(
     is24Hour: Boolean = true,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val plans by viewModel.plans.collectAsState()
     var showBottomSheet by remember { mutableStateOf(false) }
     var planToEdit by remember { mutableStateOf<MedicationPlan?>(null) }
+    var notificationPermissionGranted by remember {
+        mutableStateOf(
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var promotedNotificationsEnabled by remember {
+        mutableStateOf(
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.BAKLAVA ||
+                NotificationManagerCompat.from(context).canPostPromotedNotifications()
+        )
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        notificationPermissionGranted = granted
+    }
+    val promotedNotificationSettingsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        promotedNotificationsEnabled =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.BAKLAVA ||
+                NotificationManagerCompat.from(context).canPostPromotedNotifications()
+    }
+
+    fun requestNotificationPermissionIfNeeded() {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            !notificationPermissionGranted
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    fun openPromotedNotificationSettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+            promotedNotificationSettingsLauncher.launch(
+                Intent(Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                }
+            )
+        }
+    }
+
+    val hasEnabledPlan = plans.any { it.isEnabled }
 
     MedicationPlansScreenContent(
         plans = plans,
@@ -51,8 +113,19 @@ fun MedicationPlansScreen(
             showBottomSheet = true
         },
         onToggleEnabled = { id, isEnabled ->
+            if (isEnabled) {
+                requestNotificationPermissionIfNeeded()
+            }
             viewModel.togglePlanEnabled(id, isEnabled)
         },
+        showNotificationPermissionSetup = hasEnabledPlan && !notificationPermissionGranted,
+        onNotificationPermissionSetup = ::requestNotificationPermissionIfNeeded,
+        showPromotedNotificationSetup =
+            hasEnabledPlan &&
+                notificationPermissionGranted &&
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA &&
+                !promotedNotificationsEnabled,
+        onPromotedNotificationSetup = ::openPromotedNotificationSettings,
         modifier = modifier
     )
 
@@ -64,6 +137,9 @@ fun MedicationPlansScreen(
             planToEdit = null
         },
         onSave = { plan ->
+            if (plan.isEnabled) {
+                requestNotificationPermissionIfNeeded()
+            }
             viewModel.upsertPlan(plan)
             showBottomSheet = false
             planToEdit = null
@@ -88,6 +164,10 @@ fun MedicationPlansScreenContent(
     onPlanClick: (MedicationPlan) -> Unit,
     onAddClick: () -> Unit,
     onToggleEnabled: (UUID, Boolean) -> Unit,
+    showNotificationPermissionSetup: Boolean = false,
+    onNotificationPermissionSetup: () -> Unit = {},
+    showPromotedNotificationSetup: Boolean = false,
+    onPromotedNotificationSetup: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -113,28 +193,50 @@ fun MedicationPlansScreenContent(
         },
         modifier = modifier
     ) { paddingValues ->
-        if (plans.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.plans_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (showNotificationPermissionSetup) {
+                item(key = "notification-permission") {
+                    ReminderSetupCard(
+                        title = stringResource(R.string.plans_notification_permission_title),
+                        description = stringResource(R.string.plans_notification_permission_desc),
+                        onClick = onNotificationPermissionSetup
+                    )
+                }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+
+            if (showPromotedNotificationSetup) {
+                item(key = "promoted-notification-permission") {
+                    ReminderSetupCard(
+                        title = stringResource(R.string.plans_promoted_notification_title),
+                        description = stringResource(R.string.plans_promoted_notification_desc),
+                        onClick = onPromotedNotificationSetup
+                    )
+                }
+            }
+
+            if (plans.isEmpty()) {
+                item(key = "empty") {
+                    Box(
+                        modifier = Modifier
+                            .fillParentMaxHeight(0.7f)
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.plans_empty),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
                 items(plans, key = { it.id }) { plan ->
                     MedicationPlanCard(
                         plan = plan,
@@ -143,6 +245,45 @@ fun MedicationPlansScreenContent(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ReminderSetupCard(
+    title: String,
+    description: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.NotificationsActive,
+                contentDescription = null
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = null
+            )
         }
     }
 }

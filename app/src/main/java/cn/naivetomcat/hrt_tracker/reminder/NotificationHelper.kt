@@ -8,9 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Medication
-import androidx.compose.material.icons.materialIcon
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -58,12 +55,14 @@ class NotificationHelper(private val context: Context) {
      * @param planName 用药方案名称
      * @param description 用药方案描述
      * @param notificationId 通知ID
+     * @param scheduledAtMillis 本次计划用药时间
      */
     fun sendMedicationReminder(
         planId: String,
         planName: String,
         description: String,
-        notificationId: Int
+        notificationId: Int,
+        scheduledAtMillis: Long
     ) {
         // 检查通知权限（Android 13及以上）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -87,17 +86,46 @@ class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_IMMUTABLE
         )
 
+        val confirmPendingIntent = actionPendingIntent(
+            action = MedicationNotificationActionReceiver.ACTION_CONFIRM_DOSE,
+            planId = planId,
+            notificationId = notificationId,
+            scheduledAtMillis = scheduledAtMillis
+        )
+        val skipPendingIntent = actionPendingIntent(
+            action = MedicationNotificationActionReceiver.ACTION_SKIP_DOSE,
+            planId = planId,
+            notificationId = notificationId,
+            scheduledAtMillis = scheduledAtMillis
+        )
+
         // 构建通知
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification_pill) // TODO: 替换为应用图标
-            .setContentTitle("用药提醒：$planName")
+            .setSmallIcon(R.drawable.ic_notification_pill)
+            .setContentTitle(context.getString(R.string.notification_medication_title, planName))
             .setContentText(description)
             .setStyle(NotificationCompat.BigTextStyle().bigText(description))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .setAutoCancel(true)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setOnlyAlertOnce(true)
+            .setWhen(scheduledAtMillis)
+            .setShowWhen(true)
             .setContentIntent(pendingIntent)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setRequestPromotedOngoing(true)
+            .setAllowSystemGeneratedContextualActions(false)
+            .addAction(
+                R.drawable.ic_notification_pill,
+                context.getString(R.string.notification_confirm_dose),
+                confirmPendingIntent
+            )
+            .addAction(
+                R.drawable.ic_notification_pill,
+                context.getString(R.string.notification_skip_dose),
+                skipPendingIntent
+            )
 
         // 发送通知
         with(NotificationManagerCompat.from(context)) {
@@ -112,5 +140,28 @@ class NotificationHelper(private val context: Context) {
         with(NotificationManagerCompat.from(context)) {
             cancel(notificationId)
         }
+    }
+
+    private fun actionPendingIntent(
+        action: String,
+        planId: String,
+        notificationId: Int,
+        scheduledAtMillis: Long
+    ): PendingIntent {
+        val intent = Intent(context, MedicationNotificationActionReceiver::class.java).apply {
+            this.action = action
+            putExtra(MedicationNotificationActionReceiver.EXTRA_PLAN_ID, planId)
+            putExtra(MedicationNotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+            putExtra(
+                MedicationNotificationActionReceiver.EXTRA_SCHEDULED_AT_MILLIS,
+                scheduledAtMillis
+            )
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 }
