@@ -603,6 +603,48 @@ private fun calculateConcentrationAtTime(
 
     return null
 }
+//Claes:calculate area under curve
+private fun calculateAUCBetweenTime(
+    simulationResult: SimulationResult,
+    targetTimeL: Double,
+    targetTimeH: Double
+): Double? {
+    if (simulationResult.timeH.isEmpty() || simulationResult.concPGmL.isEmpty()) {
+        return null
+    }
+    
+    val minTime = simulationResult.timeH.minOrNull() ?: return null
+    val maxTime = simulationResult.timeH.maxOrNull() ?: return null
+
+    // 如果目标时刻在数据范围之外，返回 null
+    if (targetTimeH < minTime || targetTimeH > maxTime) {
+        return null
+    }
+    if (targetTimeL < minTime || targetTimeL > maxTime) {
+        return null
+    }
+    if(targetTimeL >= targetTimeH) {
+        return 0
+    }
+    val int = 0
+    val flag = false
+    // 找到目标时刻在两个数据点之间的位置
+    for (i in 0 until simulationResult.timeH.size - 1) {
+        val time = simulationResult.timeH[i]
+
+        if (targetTimeL <= time) {
+            flag = true
+        }
+        if (flag == true){
+            int = int + simulationResult.concPGmL[i]
+        }
+        if (time >= targetTimeH){       
+            return int
+        }
+    }
+    return null
+}
+
 
 @Composable
 private fun getConcentrationLevelText(level: ConcentrationLevel): String {
