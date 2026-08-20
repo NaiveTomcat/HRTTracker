@@ -90,6 +90,21 @@ private fun HomeScreenContent(
     } else {
         null
     }
+    val realtimeMaxConcentration = if (pkState.simulationResult != null) {
+        getMaxConcentration(pkState.simulationResult!!, realtimeCurrentTimeH-24, realtimeCurrentTimeH)
+    } else {
+        null
+    }
+    val realtimeMinConcentration = if (pkState.simulationResult != null) {
+        getMinConcentration(pkState.simulationResult!!, realtimeCurrentTimeH-24, realtimeCurrentTimeH)
+    } else {
+        null
+    }
+    val realtimeAUC = if (pkState.simulationResult != null) {
+        calculateAUCBetweenTime(pkState.simulationResult!!, realtimeCurrentTimeH-24, realtimeCurrentTimeH)
+    } else {
+        null
+    }
 
     // 检查是否需要重新运行模拟
     // 当且仅当当前时刻晚于下一次计划用药时，触发重新模拟
@@ -209,6 +224,9 @@ private fun HomeScreenContent(
                     // 当前浓度卡片
                     CurrentConcentrationCard(
                         concentration = realtimeCurrentConcentration,
+                        maxConcentration = realtimeMaxConcentration
+                        minConcentration = realtimeMinConcentration
+                        areaUnderCurve = realtimeAUC
                         pkState = pkState
                     )
 
@@ -239,6 +257,9 @@ private fun HomeScreenContent(
 @Composable
 private fun CurrentConcentrationCard(
     concentration: Double?,
+    minConcentration: Double?,
+    maxConcentration: Double?,
+    areaUnderCurve: Double?,
     pkState: PKState
 ) {
     // 根据当前浓度值创建临时的 PKState 用于颜色判断
@@ -285,6 +306,77 @@ private fun CurrentConcentrationCard(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Medium
                 )
+            }
+
+            Text(
+                text = stringResource(R.string.home_24h_concentration),
+                style = MaterialTheme.typography.titleMedium
+            )
+            /*峰浓度 */
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = stringResource(R.string.home_max_concentration),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = if (maxConcentration != null) {
+                        "%.1f pg/mL".format(maxConcentration)
+                    } else {
+                        stringResource(R.string.home_concentration_placeholder)
+                    },
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                
+            }
+            /*谷浓度 */
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = stringResource(R.string.home_min_concentration),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = if (minConcentration != null) {
+                        "%.1f pg/mL".format(minConcentration)
+                    } else {
+                        stringResource(R.string.home_concentration_placeholder)
+                    },
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                
+            }
+            /*auc */
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = stringResource(R.string.home_area_under_curve),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = if (maxConcentration != null) {
+                        "%.1f pg·h/mL".format(maxConcentration)
+                    } else {
+                        stringResource(R.string.home_area_under_curve_placeholder)
+                    },
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                
             }
         }
     }
