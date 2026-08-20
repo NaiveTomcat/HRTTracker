@@ -537,7 +537,7 @@ fun ConcentrationChart(
 
         // X轴标签
         val dateFormat = SimpleDateFormat(
-            if (is24Hour) "MM/dd HH:mm" else "MM/dd hh:mm a",
+            if (is24Hour) "MM/dd/nHH:mm" else "MM/dd/nhh:mm a",
             Locale.getDefault()
         )
         // 计算可见时间范围
