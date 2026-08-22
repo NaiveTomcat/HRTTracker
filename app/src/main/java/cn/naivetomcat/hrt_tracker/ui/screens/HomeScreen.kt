@@ -303,7 +303,7 @@ private fun CurrentConcentrationCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
-                    Modifier.weight(1f)
+                    Modifier.weight(0.9f)
                 ) {
                     Text(
                         text = if (concentration != null) {
@@ -311,25 +311,29 @@ private fun CurrentConcentrationCard(
                         } else {
                             stringResource(R.string.home_concentration_placeholder)
                         },
-                        style = MaterialTheme.typography.displayMedium,
+                        style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
                     )
                     Text(
                         text = "pg/mL",
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
                     )
                 }
                 Column(
-                    Modifier.weight(1f)
+                    Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
                 ) {
+                    Spacer(modifier = Modifier.weight(1f))
                     Text(
                         text = getConcentrationLevelText(tempPkState.getConcentrationLevelColor()),
                         style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally),
                         fontWeight = FontWeight.Medium
                     )
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
 
