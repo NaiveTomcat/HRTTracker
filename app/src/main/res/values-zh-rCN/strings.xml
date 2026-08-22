@@ -90,7 +90,7 @@
     <string name="home_refresh">刷新</string>
     <string name="home_calculating">计算中…</string>
     <string name="home_need_add_record">请先添加用药记录</string>
-    <string name="home_current_concentration">当前浓度</string>
+    <string name="home_current_concentration">当前浓度:</string>
     <string name="home_chart_title">血药浓度曲线</string>
     <string name="home_level_guide">浓度等级参考</string>
     <string name="home_level_low">低于参考范围</string>
@@ -103,13 +103,13 @@
     <string name="home_max_concentration">最高浓度</string>
     <string name="home_min_concentration">最低浓度</string>
     <string name="home_area_under_curve">曲线下面积</string>
-    <string name="home_area_under_curve_placeholder" translatable="false">--\npg·h/mL</string>
+    <string name="home_area_under_curve_placeholder" translatable="false">--</string>
 
     <string name="home_curve_guide">曲线说明</string>
     <string name="home_curve_history">历史数据和早期预测（到第一次计划用药）</string>
     <string name="home_curve_no_plan">无计划预测（50%透明，不按方案沿自然衰减）</string>
     <string name="home_curve_with_plan">按计划预测（50%透明，未来第一次计划用药后）</string>
-    <string name="home_concentration_placeholder" translatable="false">--\npg/mL</string>
+    <string name="home_concentration_placeholder" translatable="false">--</string>
     <string name="home_level_placeholder" translatable="false">--</string>
 
     <string name="records_title">用药记录</string>

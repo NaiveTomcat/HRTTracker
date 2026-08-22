@@ -302,21 +302,35 @@ private fun CurrentConcentrationCard(
                 verticalAlignment = Alignment.Bottom,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = if (concentration != null) {
-                        "%.1f\npg/mL".format(concentration)
-                    } else {
-                        stringResource(R.string.home_concentration_placeholder)
-                    },
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                Text(
-                    text = getConcentrationLevelText(tempPkState.getConcentrationLevelColor()),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium
-                )
+                Column(
+                    Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = if (concentration != null) {
+                            "%.1f".format(concentration)
+                        } else {
+                            stringResource(R.string.home_concentration_placeholder)
+                        },
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+                    )
+                    Text(
+                        text = "pg/mL",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+                    )
+                }
+                Column(
+                    Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = getConcentrationLevelText(tempPkState.getConcentrationLevelColor()),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
             Text(
@@ -340,10 +354,16 @@ private fun CurrentConcentrationCard(
                     )
                     Text(
                         text = if (maxConcentration != null) {
-                            "%.1f\npg/mL".format(maxConcentration)
+                            "%.1f".format(maxConcentration)
                         } else {
                             stringResource(R.string.home_concentration_placeholder)
                         },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+                    )
+                    Text(
+                        text = "pg/mL",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
@@ -362,10 +382,16 @@ private fun CurrentConcentrationCard(
                     )
                     Text(
                         text = if (minConcentration != null) {
-                            "%.1f\npg/mL".format(minConcentration)
+                            "%.1f".format(minConcentration)
                         } else {
                             stringResource(R.string.home_concentration_placeholder)
                         },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+                    )
+                    Text(
+                        text = "pg/mL",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
@@ -384,10 +410,16 @@ private fun CurrentConcentrationCard(
                     )
                     Text(
                         text = if (areaUnderCurve != null) {
-                            "%.1f\npg·h/mL".format(areaUnderCurve)
+                            "%.1f".format(areaUnderCurve)
                         } else {
                             stringResource(R.string.home_area_under_curve_placeholder)
                         },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+                    )
+                    Text(
+                        text = "pg·h/mL",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
