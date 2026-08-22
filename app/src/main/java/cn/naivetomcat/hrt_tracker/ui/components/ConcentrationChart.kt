@@ -552,7 +552,7 @@ fun ConcentrationChart(
             val timeValue = visibleTimeStart + (visibleTimeEnd - visibleTimeStart) * i / 5
             // 从时间值计算屏幕坐标
             val normalizedPos = ((timeValue - timeMin) / (timeMax - timeMin)).toFloat()
-            val x = chartLeft + i * chartWidth * scaleX + offsetX
+            val x = chartLeft + normalizedPos * chartWidth * scaleX + offsetX
             
             val timeMillis = (timeValue * 3600000).toLong()
             val text1 = dateFormat.format(Date(timeMillis))
