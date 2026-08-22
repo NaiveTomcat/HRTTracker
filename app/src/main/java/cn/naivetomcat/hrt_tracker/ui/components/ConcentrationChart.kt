@@ -537,7 +537,11 @@ fun ConcentrationChart(
 
         // X轴标签
         val dateFormat = SimpleDateFormat(
-            if (is24Hour) "MM/dd/nHH:mm" else "MM/dd/nhh:mm a",
+            if (is24Hour) "MM/dd" else "MM/dd",
+            Locale.getDefault()
+        )
+        val timeFormat = SimpleDateFormat(
+            if (is24Hour) "HH:mm" else "hh:mm a",
             Locale.getDefault()
         )
         // 计算可见时间范围
@@ -548,26 +552,39 @@ fun ConcentrationChart(
             val timeValue = visibleTimeStart + (visibleTimeEnd - visibleTimeStart) * i / 5
             // 从时间值计算屏幕坐标
             val normalizedPos = ((timeValue - timeMin) / (timeMax - timeMin)).toFloat()
-            val x = chartLeft + normalizedPos * chartWidth * scaleX + offsetX
+            val x = chartLeft + i * chartWidth * scaleX + offsetX
             
-            if (x >= chartLeft && x <= chartRight) {
-                val timeMillis = (timeValue * 3600000).toLong()
-                val text = dateFormat.format(Date(timeMillis))
-                val textLayoutResult = textMeasurer.measure(
-                    text = text,
-                    style = TextStyle(
-                        color = onSurfaceColor,
-                        fontSize = 10.sp
-                    )
+            val timeMillis = (timeValue * 3600000).toLong()
+            val text1 = dateFormat.format(Date(timeMillis))
+            val textLayoutResult1 = textMeasurer.measure(
+                text = text1,
+                style = TextStyle(
+                    color = onSurfaceColor,
+                    fontSize = 10.sp
                 )
-                drawText(
-                    textLayoutResult = textLayoutResult,
-                    topLeft = Offset(
-                        x - textLayoutResult.size.width / 2,
-                        chartBottom + 8.dp.toPx()
-                    )
+            )
+            drawText(
+                textLayoutResult = textLayoutResult1,
+                topLeft = Offset(
+                    x - textLayoutResult1.size.width / 2,
+                    chartBottom + 8.dp.toPx()
                 )
-            }
+            )
+            val text2 = timeFormat.format(Date(timeMillis))
+            val textLayoutResult2 = textMeasurer.measure(
+                text = text2,
+                style = TextStyle(
+                    color = onSurfaceColor,
+                    fontSize = 10.sp
+                )
+            )
+            drawText(
+                textLayoutResult = textLayoutResult2,
+                topLeft = Offset(
+                    x - textLayoutResult2.size.width / 2,
+                    chartBottom + 8.dp.toPx() + textLayoutResult1.size.height + 4.dp.toPx()
+                )
+            )
         }
         }
         

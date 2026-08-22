@@ -100,17 +100,17 @@
     <string name="home_level_target">非针剂女性向 GAHT 目标</string>
     <string name="home_level_high">高于参考范围</string>
     
-    <string name="home_24h_concentration">过去24小时</string>
+    <string name="home_24h_concentration">过去24小时:</string>
     <string name="home_max_concentration">最高浓度</string>
     <string name="home_min_concentration">最低浓度</string>
     <string name="home_area_under_curve">曲线下面积</string>
-    <string name="home_area_under_curve_placeholder" translatable="false">-- pg·h/mL</string>
+    <string name="home_area_under_curve_placeholder" translatable="false">--\npg·h/mL</string>
 
     <string name="home_curve_guide">曲线说明</string>
     <string name="home_curve_history">历史数据和早期预测（到第一次计划用药）</string>
     <string name="home_curve_no_plan">无计划预测（50%透明，不按方案沿自然衰减）</string>
     <string name="home_curve_with_plan">按计划预测（50%透明，未来第一次计划用药后）</string>
-    <string name="home_concentration_placeholder" translatable="false">-- pg/mL</string>
+    <string name="home_concentration_placeholder" translatable="false">--\npg/mL</string>
     <string name="home_level_placeholder" translatable="false">--</string>
 
     <string name="records_title">用药记录</string>
