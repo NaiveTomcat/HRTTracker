@@ -90,6 +90,32 @@ private fun HomeScreenContent(
     } else {
         null
     }
+    val lastDayConcentration = if (pkState.simulationResult != null) {
+        calculateConcentrationAtTime(pkState.simulationResult!!, realtimeCurrentTimeH-24)
+    } else {
+        null
+    }
+    val realtimeMaxConcentration = if (pkState.simulationResult != null) {
+        listOf(lastDayConcentration,realtimeCurrentConcentration,
+               getMaxConcentration(pkState.simulationResult!!,
+                                   realtimeCurrentTimeH-24,
+                                   realtimeCurrentTimeH)).filterNotNull().maxOrNull()
+    } else {
+        null
+    }
+    val realtimeMinConcentration = if (pkState.simulationResult != null) {
+        listOf(lastDayConcentration,realtimeCurrentConcentration,
+               getMinConcentration(pkState.simulationResult!!,
+                                   realtimeCurrentTimeH-24,
+                                   realtimeCurrentTimeH)).filterNotNull().minOrNull()
+    } else {
+        null
+    }
+    val realtimeAUC = if (pkState.simulationResult != null) {
+        calculateAUCBetweenTime(pkState.simulationResult!!, realtimeCurrentTimeH-24, realtimeCurrentTimeH)
+    } else {
+        null
+    }
 
     // 检查是否需要重新运行模拟
     // 当且仅当当前时刻晚于下一次计划用药时，触发重新模拟
@@ -209,6 +235,9 @@ private fun HomeScreenContent(
                     // 当前浓度卡片
                     CurrentConcentrationCard(
                         concentration = realtimeCurrentConcentration,
+                        maxConcentration = realtimeMaxConcentration,
+                        minConcentration = realtimeMinConcentration,
+                        areaUnderCurve = realtimeAUC,
                         pkState = pkState
                     )
 
@@ -239,6 +268,9 @@ private fun HomeScreenContent(
 @Composable
 private fun CurrentConcentrationCard(
     concentration: Double?,
+    minConcentration: Double?,
+    maxConcentration: Double?,
+    areaUnderCurve: Double?,
     pkState: PKState
 ) {
     // 根据当前浓度值创建临时的 PKState 用于颜色判断
@@ -263,28 +295,141 @@ private fun CurrentConcentrationCard(
         ) {
             Text(
                 text = stringResource(R.string.home_current_concentration),
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleLarge
             )
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = if (concentration != null) {
-                        "%.1f pg/mL".format(concentration)
-                    } else {
-                        stringResource(R.string.home_concentration_placeholder)
-                    },
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                Text(
-                    text = getConcentrationLevelText(tempPkState.getConcentrationLevelColor()),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium
-                )
+                Column(
+                    Modifier.weight(0.9f)
+                ) {
+                    Text(
+                        text = if (concentration != null) {
+                            "%.1f".format(concentration)
+                        } else {
+                            stringResource(R.string.home_concentration_placeholder)
+                        },
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+                    )
+                    Text(
+                        text = "pg/mL",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+                    )
+                }
+                Column(
+                    Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = getConcentrationLevelText(tempPkState.getConcentrationLevelColor()),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally),
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+
+            Text(
+                text = stringResource(R.string.home_24h_concentration),
+                style = MaterialTheme.typography.titleLarge
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.Top,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                /*峰浓度 */
+                Column(
+                    Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_max_concentration),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.Start)
+                    )
+                    Text(
+                        text = if (maxConcentration != null) {
+                            "%.1f".format(maxConcentration)
+                        } else {
+                            stringResource(R.string.home_concentration_placeholder)
+                        },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+                    )
+                    Text(
+                        text = "pg/mL",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+                    )
+                    
+                }
+                /*谷浓度 */
+                Column(
+                    Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_min_concentration),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.Start)
+                    )
+                    Text(
+                        text = if (minConcentration != null) {
+                            "%.1f".format(minConcentration)
+                        } else {
+                            stringResource(R.string.home_concentration_placeholder)
+                        },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+                    )
+                    Text(
+                        text = "pg/mL",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+                    )
+                    
+                }
+                /*auc */
+                Column(
+                    Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_area_under_curve),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.Start)
+                    )
+                    Text(
+                        text = if (areaUnderCurve != null) {
+                            "%.1f".format(areaUnderCurve)
+                        } else {
+                            stringResource(R.string.home_area_under_curve_placeholder)
+                        },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+                    )
+                    Text(
+                        text = "pg·h/mL",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+                    )
+                    
+                }
             }
         }
     }
@@ -603,6 +748,118 @@ private fun calculateConcentrationAtTime(
 
     return null
 }
+//Claes:calculate area under curve
+private fun calculateAUCBetweenTime(
+    simulationResult: SimulationResult,
+    targetTimeL: Double,
+    targetTimeH: Double
+): Double? {
+    if (simulationResult.timeH.isEmpty() || simulationResult.concPGmL.isEmpty()) {
+        return null
+    }
+    
+    val minTime = simulationResult.timeH.minOrNull() ?: return null
+    val maxTime = simulationResult.timeH.maxOrNull() ?: return null
+
+    // 如果目标时刻在数据范围之外，返回 null
+    if (targetTimeH < minTime || targetTimeH > maxTime) {
+        return null
+    }
+    if (targetTimeL < minTime || targetTimeL > maxTime) {
+        return null
+    }
+    if(targetTimeL >= targetTimeH) {
+        return 0.0
+    }
+    val data = sequence {
+        yield(targetTimeL to calculateConcentrationAtTime(simulationResult,targetTimeL))
+        for (i in 0 until simulationResult.timeH.size - 1) {
+            if(targetTimeL<=simulationResult.timeH[i] && targetTimeH>=simulationResult.timeH[i]){
+                yield(simulationResult.timeH[i] to simulationResult.concPGmL[i])
+            }
+        }
+        yield(targetTimeH to calculateConcentrationAtTime(simulationResult,targetTimeH))
+    }
+    val trapezoid:Sequence<Double?> = data.windowed(size = 2){
+        window -> window[0].first?.let{x1->window[1].first?.let{
+            x2->window[0].second?.let{y1->window[1].second?.let{y2->
+            0.5 * (y1 + y2) * (x2 - x1) }}}}
+    }
+    if (trapezoid.any { it == null }) {
+        return null
+    }
+    return trapezoid.filterNotNull().sum()
+}
+private fun getMaxConcentration(
+    simulationResult: SimulationResult,
+    targetTimeL: Double,
+    targetTimeH: Double
+): Double? {
+    if (simulationResult.timeH.isEmpty() || simulationResult.concPGmL.isEmpty()) {
+        return null
+    }
+    
+    val minTime = simulationResult.timeH.minOrNull() ?: return null
+    val maxTime = simulationResult.timeH.maxOrNull() ?: return null
+
+    // 如果目标时刻在数据范围之外，返回 null
+    if (targetTimeH < minTime || targetTimeH > maxTime) {
+        return null
+    }
+    if (targetTimeL < minTime || targetTimeL > maxTime) {
+        return null
+    }
+    if(targetTimeL >= targetTimeH) {
+        return null
+    }
+    val data = sequence {
+        for (i in 0 until simulationResult.timeH.size - 1) {
+            if(targetTimeL<=simulationResult.timeH[i] && targetTimeH>=simulationResult.timeH[i]){
+                yield(simulationResult.concPGmL[i])
+            }
+        }
+    }
+    if (data.any()){
+        return data.maxOrNull()
+    }
+    return null
+}
+
+private fun getMinConcentration(
+    simulationResult: SimulationResult,
+    targetTimeL: Double,
+    targetTimeH: Double
+): Double? {
+    if (simulationResult.timeH.isEmpty() || simulationResult.concPGmL.isEmpty()) {
+        return null
+    }
+    
+    val minTime = simulationResult.timeH.minOrNull() ?: return null
+    val maxTime = simulationResult.timeH.maxOrNull() ?: return null
+
+    // 如果目标时刻在数据范围之外，返回 null
+    if (targetTimeH < minTime || targetTimeH > maxTime) {
+        return null
+    }
+    if (targetTimeL < minTime || targetTimeL > maxTime) {
+        return null
+    }
+    if(targetTimeL >= targetTimeH) {
+        return null
+    }
+    val data = sequence {
+        for (i in 0 until simulationResult.timeH.size - 1) {
+            if(targetTimeL<=simulationResult.timeH[i] && targetTimeH>=simulationResult.timeH[i]){
+                yield(simulationResult.concPGmL[i])
+            }
+        }
+    }
+    if (data.any()){
+        return data.minOrNull()
+    }
+    return null
+}
+
 
 @Composable
 private fun getConcentrationLevelText(level: ConcentrationLevel): String {
